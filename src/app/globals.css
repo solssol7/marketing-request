@@ -1,0 +1,87 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+:root {
+    --primary-color: #ff6a21;
+    /* 브랜드 컬러 (오렌지) */
+    --primary-hover: #e55f1e;
+    --bg-color: #f8f9fa;
+    /* 연한 회색 배경 */
+    --card-bg: #ffffff;
+    /* 흰색 카드 */
+    --text-main: #333333;
+    --text-sub: #666666;
+    --border-color: #e0e0e0;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* 레이아웃 컨테이너 */
+/* Removed .container */
+
+/* 폼 카드 디자인 */
+/* Removed form */
+
+/* Removed h2 */
+
+/* 입력 필드 레이아웃 */
+/* Removed .form-row */
+
+/* 라벨 & 인풋 스타일 */
+label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-main);
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+textarea,
+select {
+    padding: 14px;
+    margin-top: 6px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    background-color: #fff;
+    font-size: 15px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    width: 100%;
+    appearance: none;
+    /* 기본 스타일 제거 */
+}
+
+/* 입력창 포커스 효과 */
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(255, 106, 33, 0.15);
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* Removed .tabs, .tab, .tab-content, .group, h3, h4, .info-text, .x-banner-images, .long-banner-images, .select-none-label, .submit-btn, .overlay, media queries */
