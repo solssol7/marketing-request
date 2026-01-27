@@ -55,7 +55,6 @@ export default function Home() {
                 }
             } catch (err) {
                 console.error(err);
-                // 사용자에게 너무 자주 뜨지 않게 로그만 남기거나, 필요시 alert
             }
         }
         fetchData();
@@ -65,6 +64,16 @@ export default function Home() {
     const filteredMarts = marts.filter(m => 
         m.name.toLowerCase().includes(martSearch.toLowerCase())
     );
+
+    // [New] 숫자 입력 핸들러 (음수 방지)
+    const handleNumberChange = (e, field) => {
+        let val = e.target.value;
+        // 빈 값이면 그대로 두고, 숫자인 경우 음수면 0으로 처리
+        if (val !== '' && Number(val) < 0) {
+            val = 0;
+        }
+        setCurrentRequest(prev => ({ ...prev, [field]: val }));
+    };
 
     // X배너 체크박스 핸들러
     const handleXBannerCheck = (val) => {
@@ -82,16 +91,35 @@ export default function Home() {
         setCurrentRequest(prev => ({ ...prev, x배너디자인: newDesign }));
     };
 
-    // 다음 단계로 이동
+    // [Updated] 다음 단계로 이동 (검증 로직 추가)
     const goNext = () => {
         if (step === 1) {
             if (!requester) return alert('요청자를 선택해주세요.');
             if (!selectedMart) return alert('마트를 선택해주세요.');
         }
+        
+        if (step === 2) {
+            // 1. X배너 검증
+            const xCount = Number(currentRequest.실내용X배너개수 || 0) + Number(currentRequest.실외용X배너개수 || 0);
+            if (xCount > 0 && currentRequest.x배너디자인.length === 0) {
+                return alert('X배너 수량을 입력하셨습니다. 디자인을 최소 1개 이상 선택해주세요.');
+            }
+
+            // 2. 현수막 검증
+            // 가로 또는 세로 사이즈가 입력되었는데 디자인을 선택하지 않은 경우
+            if ((currentRequest.현수막가로 || currentRequest.현수막세로) && !currentRequest.현수막디자인) {
+                return alert('현수막 사이즈를 입력하셨습니다. 디자인 타입을 선택해주세요.');
+            }
+
+            // (추가) 음수 값 최종 확인 (Input에서 막지만 안전장치)
+            if (Number(currentRequest.현수막가로) < 0 || Number(currentRequest.현수막세로) < 0) return alert('사이즈는 음수일 수 없습니다.');
+            if (Number(currentRequest.전단지가로) < 0 || Number(currentRequest.전단지세로) < 0) return alert('사이즈는 음수일 수 없습니다.');
+        }
+        
         setStep(prev => prev + 1);
     };
 
-    // 최종 제출 (JSON 에러 방지 로직 적용)
+    // 최종 제출
     const handleSubmit = async () => {
         if (!dueDate) return alert('마감기한을 입력해주세요.');
         if (!confirm('신청하시겠습니까?')) return;
@@ -111,7 +139,6 @@ export default function Home() {
                 body: JSON.stringify(payload)
             });
 
-            // 응답 타입 체크
             const contentType = res.headers.get("content-type");
             if (!contentType || !contentType.includes("application/json")) {
                  throw new Error("서버 오류가 발생했습니다. (Not JSON Response)");
@@ -240,8 +267,24 @@ export default function Home() {
                             {activeTab === 'tab1' && (
                                 <div>
                                     <div className={styles.row}>
-                                        <label>실내용 개수 <input type="number" className={styles.input} value={currentRequest.실내용X배너개수} onChange={e=>setCurrentRequest({...currentRequest, 실내용X배너개수:e.target.value})}/></label>
-                                        <label>실외용 개수 <input type="number" className={styles.input} value={currentRequest.실외용X배너개수} onChange={e=>setCurrentRequest({...currentRequest, 실외용X배너개수:e.target.value})}/></label>
+                                        <label>실내용 개수 
+                                            <input 
+                                                type="number" 
+                                                min="0" 
+                                                className={styles.input} 
+                                                value={currentRequest.실내용X배너개수} 
+                                                onChange={(e) => handleNumberChange(e, '실내용X배너개수')} 
+                                            />
+                                        </label>
+                                        <label>실외용 개수 
+                                            <input 
+                                                type="number" 
+                                                min="0" 
+                                                className={styles.input} 
+                                                value={currentRequest.실외용X배너개수} 
+                                                onChange={(e) => handleNumberChange(e, '실외용X배너개수')} 
+                                            />
+                                        </label>
                                     </div>
                                     
                                     <h4 className={styles.subTitle}>디자인 선택</h4>
@@ -271,8 +314,24 @@ export default function Home() {
                             {activeTab === 'tab2' && (
                                 <div>
                                     <div className={styles.row}>
-                                        <label>가로(cm) <input type="number" className={styles.input} value={currentRequest.현수막가로} onChange={e=>setCurrentRequest({...currentRequest, 현수막가로:e.target.value})}/></label>
-                                        <label>세로(cm) <input type="number" className={styles.input} value={currentRequest.현수막세로} onChange={e=>setCurrentRequest({...currentRequest, 현수막세로:e.target.value})}/></label>
+                                        <label>가로(cm) 
+                                            <input 
+                                                type="number" 
+                                                min="0" 
+                                                className={styles.input} 
+                                                value={currentRequest.현수막가로} 
+                                                onChange={(e) => handleNumberChange(e, '현수막가로')} 
+                                            />
+                                        </label>
+                                        <label>세로(cm) 
+                                            <input 
+                                                type="number" 
+                                                min="0" 
+                                                className={styles.input} 
+                                                value={currentRequest.현수막세로} 
+                                                onChange={(e) => handleNumberChange(e, '현수막세로')} 
+                                            />
+                                        </label>
                                     </div>
                                     
                                     <h4 className={styles.subTitle}>디자인 타입</h4>
@@ -302,8 +361,24 @@ export default function Home() {
                             {/* 나머지 탭 */}
                             {activeTab === 'tab3' && (
                                 <div className={styles.row}>
-                                    <label>가로 <input type="text" className={styles.input} value={currentRequest.전단지가로} onChange={e=>setCurrentRequest({...currentRequest, 전단지가로:e.target.value})}/></label>
-                                    <label>세로 <input type="text" className={styles.input} value={currentRequest.전단지세로} onChange={e=>setCurrentRequest({...currentRequest, 전단지세로:e.target.value})}/></label>
+                                    <label>가로 
+                                        <input 
+                                            type="number" 
+                                            min="0" 
+                                            className={styles.input} 
+                                            value={currentRequest.전단지가로} 
+                                            onChange={(e) => handleNumberChange(e, '전단지가로')} 
+                                        />
+                                    </label>
+                                    <label>세로 
+                                        <input 
+                                            type="number" 
+                                            min="0" 
+                                            className={styles.input} 
+                                            value={currentRequest.전단지세로} 
+                                            onChange={(e) => handleNumberChange(e, '전단지세로')} 
+                                        />
+                                    </label>
                                 </div>
                             )}
                             {activeTab === 'tab4' && (
@@ -371,7 +446,6 @@ export default function Home() {
                         <h3>{designModalType === 'xbanner' ? 'X배너 디자인 선택' : '현수막 디자인 선택'}</h3>
                         <p className={styles.modalDesc}>터치하여 선택하세요.</p>
                         
-                        {/* 여기가 핵심: 타입에 따라 다른 레이아웃 클래스 적용 */}
                         <div className={designModalType === 'xbanner' ? styles.modalGrid : styles.modalBannerStack}>
                             {designModalType === 'xbanner' ? (
                                 [1, 2, 3, 4, 5, 6, 7, 8].map(num => (
