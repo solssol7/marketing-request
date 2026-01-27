@@ -1,94 +1,115 @@
 import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
+import axios from 'axios';
 
-// 구글 인증 로직을 API 내부로 가져와 디버깅 용이하게 변경
-async function getSheetsClient() {
+export async function POST(req) {
     try {
+        const formData = await req.json();
+        
+        // 환경변수 체크
         const email = process.env.GOOGLE_CLIENT_EMAIL;
         const key = process.env.GOOGLE_PRIVATE_KEY;
+        const spreadsheetId = process.env.SPREADSHEET_ID;
 
-        console.log('[Debug] Auth Info Check:', {
-            hasEmail: !!email,
-            hasKey: !!key,
-            keyLength: key ? key.length : 0
-        });
-
-        if (!email || !key) {
-            throw new Error('환경변수(GOOGLE_CLIENT_EMAIL 또는 GOOGLE_PRIVATE_KEY)가 설정되지 않았습니다.');
-        }
-
-        // 줄바꿈 문자 처리 강화
-        const formattedKey = key.replace(/\\n/g, '\n');
+        if (!email || !key) throw new Error('구글 인증 환경변수 미설정');
 
         const auth = new google.auth.GoogleAuth({
             credentials: {
                 client_email: email,
-                private_key: formattedKey,
+                private_key: key.replace(/\\n/g, '\n'),
             },
             scopes: ['https://www.googleapis.com/auth/spreadsheets'],
         });
 
         const client = await auth.getClient();
-        return google.sheets({ version: 'v4', auth: client });
-    } catch (e) {
-        console.error('[Debug] Auth Error:', e);
-        throw new Error(`구글 인증 실패: ${e.message}`);
-    }
-}
+        const sheets = google.sheets({ version: 'v4', auth: client });
 
-export async function GET() {
-    const debugLogs = [];
-    const log = (msg) => {
-        console.log(`[API] ${msg}`);
-        debugLogs.push(msg);
-    };
-
-    try {
-        log('Init API 시작');
-        
-        const spreadsheetId = process.env.SPREADSHEET_ID;
-        log(`Spreadsheet ID 확인: ${spreadsheetId ? 'OK' : 'MISSING'}`);
-        
-        if (!spreadsheetId) throw new Error('SPREADSHEET_ID 환경변수가 없습니다.');
-
-        const sheets = await getSheetsClient();
-        log('구글 시트 클라이언트 생성 성공');
-
-        // 1. 유저 정보 가져오기
-        log('유저 정보 조회 시도 (유저 정보!A2:A)');
-        const userResponse = await sheets.spreadsheets.values.get({
+        // 1. 유저 정보 조회 (Slack ID 매칭용)
+        const userSheetData = await sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: '유저 정보!A2:A',
+            range: '유저 정보!A2:F',
         });
-        const users = userResponse.data.values ? userResponse.data.values.flat() : [];
-        log(`유저 데이터 ${users.length}건 로드됨`);
+        const userRows = userSheetData.data.values || [];
+        const userInfo = userRows.find(row => row[0] === formData.요청자);
 
-        // 2. 마트 정보 가져오기
-        log('마트 정보 조회 시도 (마트!A2:D)');
-        const martResponse = await sheets.spreadsheets.values.get({
+        const isDistributor = formData.요청자.includes('총판');
+        const slackId = userInfo ? userInfo[3] : null; // D열 Slack ID
+        const requesterGid = userInfo ? userInfo[5] : ''; // F열 GID
+
+        // 2. 데이터 가공
+        const timestamp = new Date();
+        const requestId = timestamp.getTime();
+        const requestDate = timestamp.toISOString().split('T')[0];
+
+        // 요청 타입 요약
+        let requestType = "기타";
+        if (parseInt(formData.실내용X배너개수) > 0 || parseInt(formData.실외용X배너개수) > 0) requestType = "X배너";
+        else if (formData.현수막가로) requestType = "현수막";
+        else if (formData.전단지가로) requestType = "전단지";
+        else if (formData.디자인용도) requestType = "디자인";
+
+        // 구글 시트 행 데이터 (순서 중요)
+        const newRow = [
+            requestId,                  // 0: ID
+            formData.요청자,            // 1: 요청자
+            formData.마트명,            // 2: 마트명
+            requestDate,                // 3: 요청일
+            formData.마감기한,          // 4: 마감기한
+            '', '',                     // 5, 6
+            formData.실내용X배너개수 || 0, // 7
+            Array.isArray(formData.x배너디자인) ? formData.x배너디자인.join(', ') : '', // 8
+            formData.실외용X배너개수 || 0, // 9
+            formData.디자인용도 || '',     // 10
+            formData.현수막가로 || '',     // 11
+            formData.현수막세로 || '',     // 12
+            formData.현수막디자인 || '',   // 13
+            formData.전단지가로 || '',     // 14
+            formData.전단지세로 || '',     // 15
+            formData.전단지디자인 || '',   // 16
+            formData.기타 || '',           // 17
+            '', '', '', '', '', '', '',    // 18~23
+            requesterGid,                  // 24
+            '', '',                        // 25, 26
+            formData.디자인사이즈 || '',   // 27
+            requestType,                   // 28
+            formData.마트Id || ''          // 29
+        ];
+
+        // 3. 시트에 추가
+        await sheets.spreadsheets.values.append({
             spreadsheetId,
-            range: '마트!A2:D',
+            range: '내역!A:A',
+            valueInputOption: 'USER_ENTERED',
+            requestBody: { values: [newRow] },
         });
-        
-        const marts = martResponse.data.values
-            ? martResponse.data.values.map(row => ({ name: row[0], id: row[3] || 'NoID' }))
-            : [];
-        log(`마트 데이터 ${marts.length}건 로드됨`);
 
-        return NextResponse.json({ 
-            success: true,
-            users, 
-            marts,
-            debugLogs // 클라이언트 디버그 패널용
-        });
+        // 4. 슬랙 알림
+        const webhookUrl = isDistributor
+            ? process.env.SLACK_WEBHOOK_DISTRIBUTOR
+            : process.env.SLACK_WEBHOOK_NORMAL;
+
+        if (webhookUrl) {
+            let threadText = `◼︎ ${requestType} 요청\n`;
+            if (requestType === 'X배너') threadText += `- 실내: ${newRow[7]}, 실외: ${newRow[9]}\n- 디자인: ${newRow[8]}`;
+            if (requestType === '현수막') threadText += `- 사이즈: ${newRow[11]}x${newRow[12]}\n- 디자인: ${newRow[13]}`;
+            if (requestType === '전단지') threadText += `- 사이즈: ${newRow[14]}x${newRow[15]}`;
+            if (requestType === '기타') threadText += `- 내용: ${newRow[17]}`;
+            
+            await axios.post(webhookUrl, {
+                requestId: requestId.toString(),
+                requester: isDistributor ? formData.요청자 : slackId,
+                storeName: formData.마트명,
+                dueDate: formData.마감기한,
+                thread: threadText,
+                requestSummary: requestType,
+                isDistributor: isDistributor
+            });
+        }
+
+        return NextResponse.json({ success: true });
 
     } catch (error) {
-        console.error('[API Error]', error);
-        return NextResponse.json({ 
-            success: false,
-            error: error.message,
-            stack: error.stack,
-            debugLogs 
-        }, { status: 500 });
+        console.error('Submit Error:', error);
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
