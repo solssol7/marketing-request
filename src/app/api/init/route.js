@@ -3,42 +3,38 @@ import { google } from 'googleapis';
 
 export const dynamic = 'force-dynamic';
 
-async function getSheetsClient() {
-    const email = process.env.GOOGLE_CLIENT_EMAIL;
-    const key = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-
-    if (!email || !key) throw new Error('구글 인증 환경변수 미설정');
-
-    const auth = new google.auth.GoogleAuth({
-        credentials: { client_email: email, private_key: key },
-        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    return google.sheets({ version: 'v4', auth: await auth.getClient() });
-}
-
 export async function GET() {
     try {
-        const sheets = await getSheetsClient();
+        // 1. 환경변수 체크
+        const email = process.env.GOOGLE_CLIENT_EMAIL;
+        const key = process.env.GOOGLE_PRIVATE_KEY;
         const spreadsheetId = process.env.SPREADSHEET_ID;
 
-        // 유저 정보
-        const userRes = await sheets.spreadsheets.values.get({
-            spreadsheetId, range: '유저 정보!A2:A',
-        });
-        
-        // 마트 정보 (A:이름, B:주문가능, C:등록날짜, D:ID)
-        const martRes = await sheets.spreadsheets.values.get({
-            spreadsheetId, range: '마트!A2:D',
+        if (!email || !key || !spreadsheetId) {
+            throw new Error('환경변수(GOOGLE_...)가 설정되지 않았습니다. Vercel Settings를 확인하세요.');
+        }
+
+        // 2. 구글 인증 (줄바꿈 문자 처리)
+        const auth = new google.auth.GoogleAuth({
+            credentials: {
+                client_email: email,
+                private_key: key.replace(/\\n/g, '\n'), // Vercel 환경변수 줄바꿈 처리
+            },
+            scopes: ['https://www.googleapis.com/auth/spreadsheets'],
         });
 
+        const client = await auth.getClient();
+        const sheets = google.sheets({ version: 'v4', auth: client });
+
+        // 3. 데이터 가져오기
+        const userRes = await sheets.spreadsheets.values.get({ spreadsheetId, range: '유저 정보!A2:A' });
+        const martRes = await sheets.spreadsheets.values.get({ spreadsheetId, range: '마트!A2:D' });
+
         const users = userRes.data.values ? userRes.data.values.flat() : [];
-        
-        // 마트 데이터 가공
         const marts = martRes.data.values
             ? martRes.data.values.map(row => ({
                 name: row[0],
-                orderable: row[1] === 'TRUE', // 문자열 'TRUE'를 불린으로 변환
+                orderable: row[1] === 'TRUE',
                 date: row[2],
                 id: row[3]
             }))
@@ -47,7 +43,8 @@ export async function GET() {
         return NextResponse.json({ success: true, users, marts });
 
     } catch (error) {
-        console.error('Init Error:', error);
+        console.error('API Error:', error); // Vercel 로그에 남김
+        // 에러가 나도 JSON 형식을 유지해서 반환 (Unexpected end of JSON 방지)
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
