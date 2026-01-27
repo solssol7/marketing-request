@@ -6,20 +6,20 @@ import styles from './page.module.css';
 export default function Home() {
     // --- 데이터 상태 ---
     const [users, setUsers] = useState([]);
-    const [marts, setMarts] = useState([]); // { name, orderable, date, id }
+    const [marts, setMarts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [minDate, setMinDate] = useState('');
 
     // --- UI 상태 ---
-    const [step, setStep] = useState(1); // 1:기본정보, 2:품목입력, 3:최종확인
+    const [step, setStep] = useState(1);
     const [activeTab, setActiveTab] = useState('tab1');
-    const [showDesignModal, setShowDesignModal] = useState(false); // 모바일용 모달
+    const [showDesignModal, setShowDesignModal] = useState(false);
     const [designModalType, setDesignModalType] = useState(''); // 'xbanner' or 'banner'
 
     // --- 입력 상태 ---
     const [requester, setRequester] = useState('');
     const [martSearch, setMartSearch] = useState('');
-    const [selectedMart, setSelectedMart] = useState(null); // 선택된 마트 객체
+    const [selectedMart, setSelectedMart] = useState(null);
     const [dueDate, setDueDate] = useState('');
     
     // 요청 품목 상태
@@ -31,18 +31,34 @@ export default function Home() {
     };
     const [currentRequest, setCurrentRequest] = useState(initialRequest);
 
-    // 초기 데이터 로드
+    // 초기 데이터 로드 (JSON 에러 방지 로직 적용)
     useEffect(() => {
         setMinDate(new Date().toISOString().split('T')[0]);
-        fetch('/api/init')
-            .then(res => res.json())
-            .then(data => {
-                if(data.success) {
+        
+        async function fetchData() {
+            try {
+                const res = await fetch('/api/init');
+                
+                // HTML 에러 페이지가 오는지 확인 (Vercel 에러 방지)
+                const contentType = res.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    console.error("Received Content-Type:", contentType);
+                    throw new Error("서버 응답이 올바르지 않습니다. (API 에러)");
+                }
+
+                const data = await res.json();
+                if (data.success) {
                     setUsers(data.users || []);
                     setMarts(data.marts || []);
+                } else {
+                    throw new Error(data.error || '데이터 로드 실패');
                 }
-            })
-            .catch(err => console.error(err));
+            } catch (err) {
+                console.error(err);
+                // 사용자에게 너무 자주 뜨지 않게 로그만 남기거나, 필요시 alert
+            }
+        }
+        fetchData();
     }, []);
 
     // 마트 검색 필터
@@ -75,7 +91,7 @@ export default function Home() {
         setStep(prev => prev + 1);
     };
 
-    // 최종 제출
+    // 최종 제출 (JSON 에러 방지 로직 적용)
     const handleSubmit = async () => {
         if (!dueDate) return alert('마감기한을 입력해주세요.');
         if (!confirm('신청하시겠습니까?')) return;
@@ -94,9 +110,16 @@ export default function Home() {
                 method: 'POST',
                 body: JSON.stringify(payload)
             });
+
+            // 응답 타입 체크
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                 throw new Error("서버 오류가 발생했습니다. (Not JSON Response)");
+            }
+
             const result = await res.json();
 
-            if (res.ok) {
+            if (result.success) {
                 alert('요청이 완료되었습니다.');
                 window.location.reload();
             } else {
@@ -109,7 +132,7 @@ export default function Home() {
         }
     };
 
-    // 디자인 모달 열기 (모바일용)
+    // 디자인 모달 열기
     const openModal = (type) => {
         setDesignModalType(type);
         setShowDesignModal(true);
@@ -175,7 +198,7 @@ export default function Home() {
                                                 <td>{mart.name}</td>
                                                 <td>
                                                     <span className={mart.orderable ? styles.statusOk : styles.statusNo}>
-                                                        {mart.orderable ? '주문가능' : '불가'}
+                                                        {mart.orderable ? '가능' : '불가'}
                                                     </span>
                                                 </td>
                                                 <td>{mart.date}</td>
@@ -223,7 +246,7 @@ export default function Home() {
                                     
                                     <h4 className={styles.subTitle}>디자인 선택</h4>
                                     
-                                    {/* 모바일: 모달 열기 버튼 / PC: 그리드 바로 표시 */}
+                                    {/* 모바일: 모달 열기 버튼 */}
                                     <div className={styles.mobileOnly}>
                                         <button className={styles.openModalBtn} onClick={() => openModal('xbanner')}>🎨 디자인 이미지 확인 및 선택</button>
                                         <div className={styles.selectedSummary}>
@@ -231,6 +254,7 @@ export default function Home() {
                                         </div>
                                     </div>
 
+                                    {/* 데스크탑: 그리드 표시 */}
                                     <div className={`${styles.imageGrid} ${styles.desktopOnly}`}>
                                         {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
                                             <label key={num} className={`${styles.imgLabel} ${currentRequest.x배너디자인.includes(`type${num}`) ? styles.selectedImg : ''}`}>
@@ -252,15 +276,17 @@ export default function Home() {
                                     </div>
                                     
                                     <h4 className={styles.subTitle}>디자인 타입</h4>
+                                    
+                                    {/* 모바일: 모달 열기 */}
                                     <div className={styles.mobileOnly}>
                                         <button className={styles.openModalBtn} onClick={() => openModal('banner')}>🎨 현수막 디자인 확인</button>
                                         <div className={styles.selectedSummary}>선택됨: {currentRequest.현수막디자인 || '미선택'}</div>
                                     </div>
 
+                                    {/* 데스크탑: 세로형 리스트 */}
                                     <div className={`${styles.bannerGrid} ${styles.desktopOnly}`}>
                                         <label className={`${styles.bannerLabel} ${currentRequest.현수막디자인 === 'type1' ? styles.selectedBanner : ''}`}>
                                             <input type="radio" name="banner" value="type1" checked={currentRequest.현수막디자인 === 'type1'} onChange={() => setCurrentRequest({...currentRequest, 현수막디자인: 'type1'})} hidden />
-                                            {/* 현수막 이미지는 요청에 따라 가상 링크 사용 */}
                                             <img src="https://fs.qmk.me/template-banner-1.png" alt="현수막1" onError={(e) => e.target.src='https://placehold.co/400x100?text=Design+1'} />
                                             <span>디자인 1</span>
                                         </label>
@@ -273,7 +299,7 @@ export default function Home() {
                                 </div>
                             )}
 
-                            {/* 나머지 탭들은 입력창 위주이므로 그대로 유지 */}
+                            {/* 나머지 탭 */}
                             {activeTab === 'tab3' && (
                                 <div className={styles.row}>
                                     <label>가로 <input type="text" className={styles.input} value={currentRequest.전단지가로} onChange={e=>setCurrentRequest({...currentRequest, 전단지가로:e.target.value})}/></label>
@@ -343,9 +369,10 @@ export default function Home() {
                 <div className={styles.modalOverlay} onClick={() => setShowDesignModal(false)}>
                     <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
                         <h3>{designModalType === 'xbanner' ? 'X배너 디자인 선택' : '현수막 디자인 선택'}</h3>
-                        <p className={styles.modalDesc}>이미지를 터치하여 선택하세요.</p>
+                        <p className={styles.modalDesc}>터치하여 선택하세요.</p>
                         
-                        <div className={styles.modalGrid}>
+                        {/* 여기가 핵심: 타입에 따라 다른 레이아웃 클래스 적용 */}
+                        <div className={designModalType === 'xbanner' ? styles.modalGrid : styles.modalBannerStack}>
                             {designModalType === 'xbanner' ? (
                                 [1, 2, 3, 4, 5, 6, 7, 8].map(num => (
                                     <label key={num} className={`${styles.imgLabel} ${currentRequest.x배너디자인.includes(`type${num}`) ? styles.selectedImg : ''}`}>
