@@ -4,316 +4,375 @@ import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 
 export default function Home() {
-    // --- 초기 데이터 상태 ---
+    // --- 데이터 상태 ---
     const [users, setUsers] = useState([]);
-    const [marts, setMarts] = useState([]);
-    const [minDate, setMinDate] = useState('');
+    const [marts, setMarts] = useState([]); // { name, orderable, date, id }
     const [loading, setLoading] = useState(false);
-    
-    // --- 디버그 상태 ---
-    const [showDebug, setShowDebug] = useState(false);
-    const [debugInfo, setDebugInfo] = useState({ logs: [], error: null, status: '대기 중' });
+    const [minDate, setMinDate] = useState('');
 
-    // --- 입력 폼 상태 ---
-    const [requester, setRequester] = useState('');
-    const [selectedMartName, setSelectedMartName] = useState('');
-    const [currentDueDate, setCurrentDueDate] = useState('');
+    // --- UI 상태 ---
+    const [step, setStep] = useState(1); // 1:기본정보, 2:품목입력, 3:최종확인
     const [activeTab, setActiveTab] = useState('tab1');
+    const [showDesignModal, setShowDesignModal] = useState(false); // 모바일용 모달
+    const [designModalType, setDesignModalType] = useState(''); // 'xbanner' or 'banner'
 
-    const initialRequestState = {
+    // --- 입력 상태 ---
+    const [requester, setRequester] = useState('');
+    const [martSearch, setMartSearch] = useState('');
+    const [selectedMart, setSelectedMart] = useState(null); // 선택된 마트 객체
+    const [dueDate, setDueDate] = useState('');
+    
+    // 요청 품목 상태
+    const initialRequest = {
         실내용X배너개수: 0, 실외용X배너개수: 0, x배너디자인: [],
         현수막가로: '', 현수막세로: '', 현수막디자인: '',
         전단지가로: '', 전단지세로: '', 전단지디자인: '',
         기타: '', 디자인사이즈: '', 디자인용도: ''
     };
-    const [currentRequest, setCurrentRequest] = useState(initialRequestState);
-    
-    // --- 장바구니 상태 ---
-    const [cart, setCart] = useState([]);
-    const [isCartOpen, setIsCartOpen] = useState(false);
+    const [currentRequest, setCurrentRequest] = useState(initialRequest);
 
-    // 데이터 로드 함수 (디버깅 정보 포함)
-    const loadData = async () => {
-        setDebugInfo(prev => ({ ...prev, status: '데이터 로딩 중...' }));
-        try {
-            const res = await fetch('/api/init');
-            const data = await res.json();
-
-            // 디버그 로그 저장
-            if (data.debugLogs) {
-                setDebugInfo(prev => ({ ...prev, logs: data.debugLogs }));
-            }
-
-            if (data.success) {
-                setUsers(data.users || []);
-                setMarts(data.marts || []);
-                setDebugInfo(prev => ({ 
-                    ...prev, 
-                    error: null, 
-                    status: `성공: 유저 ${data.users?.length}명, 마트 ${data.marts?.length}개 로드됨` 
-                }));
-            } else {
-                throw new Error(data.error || '알 수 없는 서버 에러');
-            }
-        } catch (err) {
-            console.error(err);
-            setDebugInfo(prev => ({ 
-                ...prev, 
-                error: err.message, 
-                status: '로드 실패' 
-            }));
-        }
-    };
-
+    // 초기 데이터 로드
     useEffect(() => {
         setMinDate(new Date().toISOString().split('T')[0]);
-        loadData();
+        fetch('/api/init')
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    setUsers(data.users || []);
+                    setMarts(data.marts || []);
+                }
+            })
+            .catch(err => console.error(err));
     }, []);
 
-    // 장바구니 담기
-    const addToCart = () => {
-        if (!requester) return alert('요청자 이름을 선택해주세요.');
-        if (!selectedMartName) return alert('마트를 선택해주세요.');
-        if (!currentDueDate) return alert('이 마트의 마감기한을 선택해주세요.');
+    // 마트 검색 필터
+    const filteredMarts = marts.filter(m => 
+        m.name.toLowerCase().includes(martSearch.toLowerCase())
+    );
 
-        // 마트 ID 찾기 (이름으로 매칭)
-        const martInfo = marts.find(m => m.name === selectedMartName) || { id: 'Unknown' };
-        
-        // 요약 생성
-        const getRequestSummary = (data) => {
-             const parts = [];
-             if (data.실내용X배너개수 > 0 || data.실외용X배너개수 > 0) parts.push(`X배너(${Number(data.실내용X배너개수)+Number(data.실외용X배너개수)})`);
-             if (data.현수막가로) parts.push('현수막');
-             if (data.전단지가로) parts.push('전단지');
-             if (data.디자인용도) parts.push('디자인');
-             if (data.기타) parts.push('기타');
-             return parts.length > 0 ? parts.join(', ') : '내용 없음';
-        };
-
-        const summary = getRequestSummary(currentRequest);
-        
-        // 내용이 없으면 확인
-        if (summary === '내용 없음') {
-            if (!confirm('입력된 품목이 없습니다. 그래도 담으시겠습니까?')) return;
+    // X배너 체크박스 핸들러
+    const handleXBannerCheck = (val) => {
+        let newDesign = [...currentRequest.x배너디자인];
+        if (val === 'none') {
+            newDesign = newDesign.includes('none') ? [] : ['none'];
+        } else {
+            if (newDesign.includes('none')) newDesign = [];
+            if (newDesign.includes(val)) {
+                newDesign = newDesign.filter(item => item !== val);
+            } else {
+                newDesign.push(val);
+            }
         }
-
-        const newItem = {
-            id: Date.now(),
-            martName: selectedMartName,
-            martId: martInfo.id,
-            dueDate: currentDueDate,
-            details: { ...currentRequest },
-            summary: summary
-        };
-
-        setCart([...cart, newItem]);
-        
-        // 입력 필드 초기화 (요청자는 유지)
-        setSelectedMartName('');
-        setCurrentDueDate('');
-        setCurrentRequest(initialRequestState);
-        setActiveTab('tab1');
-        
-        alert(`${selectedMartName} 요청이 장바구니에 담겼습니다.`);
-        setIsCartOpen(true); // 모바일에서 장바구니 열기
+        setCurrentRequest(prev => ({ ...prev, x배너디자인: newDesign }));
     };
 
-    const removeFromCart = (id) => setCart(cart.filter(item => item.id !== id));
+    // 다음 단계로 이동
+    const goNext = () => {
+        if (step === 1) {
+            if (!requester) return alert('요청자를 선택해주세요.');
+            if (!selectedMart) return alert('마트를 선택해주세요.');
+        }
+        setStep(prev => prev + 1);
+    };
 
-    // 최종 제출 (일괄 전송)
-    const handleSubmitAll = async () => {
-        if (cart.length === 0) return alert('장바구니가 비어있습니다.');
-        if (!confirm(`총 ${cart.length}건의 요청을 제출하시겠습니까?`)) return;
+    // 최종 제출
+    const handleSubmit = async () => {
+        if (!dueDate) return alert('마감기한을 입력해주세요.');
+        if (!confirm('신청하시겠습니까?')) return;
 
         setLoading(true);
         try {
-            for (const item of cart) {
-                const payload = {
-                    요청자: requester,
-                    마트명: item.martName,
-                    마트Id: item.martId,
-                    마감기한: item.dueDate,
-                    ...item.details
-                };
-                
-                const res = await fetch('/api/submit', {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-                
-                if (!res.ok) {
-                    const errData = await res.json();
-                    throw new Error(`${item.martName} 전송 실패: ${errData.error}`);
-                }
+            const payload = {
+                요청자: requester,
+                마트명: selectedMart.name,
+                마트Id: selectedMart.id,
+                마감기한: dueDate,
+                ...currentRequest
+            };
+            
+            const res = await fetch('/api/submit', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+
+            if (res.ok) {
+                alert('요청이 완료되었습니다.');
+                window.location.reload();
+            } else {
+                throw new Error(result.error);
             }
-            alert('모든 요청이 성공적으로 완료되었습니다!');
-            window.location.reload();
         } catch (err) {
             alert('오류 발생: ' + err.message);
         } finally {
             setLoading(false);
         }
     };
-    
-    // 탭 메뉴
-    const tabs = [
-        { id: 'tab1', label: 'X배너' },
-        { id: 'tab2', label: '현수막' },
-        { id: 'tab3', label: '전단지' },
-        { id: 'tab4', label: '기타' },
-        { id: 'tab5', label: '디자인' },
-        { id: 'tab6', label: '자료실' },
-    ];
+
+    // 디자인 모달 열기 (모바일용)
+    const openModal = (type) => {
+        setDesignModalType(type);
+        setShowDesignModal(true);
+    };
 
     return (
         <div className={styles.container}>
-            <main className={styles.mainContent}>
-                <header className={styles.header}>
-                    <h1 className={styles.pageTitle}>마케팅 요청</h1>
-                    <p className={styles.pageDesc}>마트별 필요한 품목을 담아 한 번에 요청하세요.</p>
-                </header>
+            {/* 상단 진행바 */}
+            <div className={styles.progressBar}>
+                <div className={`${styles.stepItem} ${step >= 1 ? styles.activeStep : ''}`}>1. 기본정보</div>
+                <div className={`${styles.stepItem} ${step >= 2 ? styles.activeStep : ''}`}>2. 품목선택</div>
+                <div className={`${styles.stepItem} ${step >= 3 ? styles.activeStep : ''}`}>3. 신청완료</div>
+            </div>
 
-                {/* 에러 발생 시 알림 배너 */}
-                {debugInfo.error && (
-                    <div className={styles.errorBanner}>
-                        🚨 데이터 로드 실패: {debugInfo.error}
-                        <br/>
-                        <button onClick={loadData} className={styles.retryBtn}>다시 시도</button>
-                    </div>
-                )}
-
-                {/* 1단계: 기본 정보 선택 */}
-                <section className={styles.sectionCard}>
-                    <h2 className={styles.sectionTitle}>1. 기본 정보 선택</h2>
-                    <div className={styles.inputGroup}>
-                        <label className={styles.label}>
-                            요청자 (이름)
-                            <input list="users-list" value={requester} onChange={(e) => setRequester(e.target.value)} placeholder="이름 입력/선택" className={styles.input}/>
+            <div className={styles.card}>
+                
+                {/* STEP 1: 기본 정보 및 마트 선택 */}
+                {step === 1 && (
+                    <div className={styles.stepContent}>
+                        <h2 className={styles.title}>누가, 어떤 마트를 요청하나요?</h2>
+                        
+                        <div className={styles.formGroup}>
+                            <label className={styles.label}>요청자 선택</label>
+                            <input 
+                                list="users-list" 
+                                className={styles.input} 
+                                value={requester} 
+                                onChange={(e) => setRequester(e.target.value)} 
+                                placeholder="이름을 검색하세요"
+                            />
                             <datalist id="users-list">
                                 {users.map((u, i) => <option key={i} value={u} />)}
                             </datalist>
-                        </label>
+                        </div>
+
+                        <div className={styles.formGroup}>
+                            <label className={styles.label}>마트 검색</label>
+                            <input 
+                                type="text" 
+                                className={styles.input} 
+                                value={martSearch} 
+                                onChange={(e) => setMartSearch(e.target.value)} 
+                                placeholder="마트명을 입력하세요 (예: 럭키)"
+                            />
+                            
+                            {/* 마트 선택 테이블 */}
+                            <div className={styles.tableWrapper}>
+                                <table className={styles.martTable}>
+                                    <thead>
+                                        <tr>
+                                            <th>마트명</th>
+                                            <th>상태</th>
+                                            <th>등록일</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredMarts.length > 0 ? filteredMarts.map((mart) => (
+                                            <tr 
+                                                key={mart.id} 
+                                                className={`${styles.martRow} ${selectedMart?.id === mart.id ? styles.selectedRow : ''} ${!mart.orderable ? styles.disabledRow : ''}`}
+                                                onClick={() => mart.orderable && setSelectedMart(mart)}
+                                            >
+                                                <td>{mart.name}</td>
+                                                <td>
+                                                    <span className={mart.orderable ? styles.statusOk : styles.statusNo}>
+                                                        {mart.orderable ? '주문가능' : '불가'}
+                                                    </span>
+                                                </td>
+                                                <td>{mart.date}</td>
+                                            </tr>
+                                        )) : (
+                                            <tr><td colSpan="3" className={styles.noResult}>검색 결과가 없습니다.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {selectedMart && <p className={styles.selectionMsg}>선택된 마트: <strong>{selectedMart.name}</strong></p>}
+                        </div>
+
+                        <button className={styles.nextBtn} onClick={goNext}>다음 단계로 →</button>
+                    </div>
+                )}
+
+                {/* STEP 2: 품목 입력 */}
+                {step === 2 && (
+                    <div className={styles.stepContent}>
+                        <h2 className={styles.title}>{selectedMart?.name}에 필요한 물품은?</h2>
                         
-                        <div className={styles.row}>
-                            <label className={styles.label}>
-                                마트 선택
-                                <input list="marts-list" value={selectedMartName} onChange={(e) => setSelectedMartName(e.target.value)} placeholder="마트 검색" className={styles.input}/>
-                                <datalist id="marts-list">
-                                    {marts.map((m, i) => <option key={i} value={m.name} />)}
-                                </datalist>
-                            </label>
-                            <label className={styles.label}>
-                                희망 마감일
-                                <input type="date" min={minDate} value={currentDueDate} onChange={(e) => setCurrentDueDate(e.target.value)} className={styles.input}/>
-                            </label>
+                        {/* 탭 메뉴 */}
+                        <div className={styles.tabs}>
+                            {['tab1', 'tab2', 'tab3', 'tab4', 'tab5', 'tab6'].map((tab, idx) => (
+                                <button 
+                                    key={tab} 
+                                    className={`${styles.tabBtn} ${activeTab === tab ? styles.activeTab : ''}`}
+                                    onClick={() => setActiveTab(tab)}
+                                >
+                                    {['X배너', '현수막', '전단지', '기타', '디자인', '자료실'][idx]}
+                                </button>
+                            ))}
                         </div>
-                    </div>
-                </section>
 
-                {/* 2단계: 품목 입력 */}
-                <section className={styles.sectionCard}>
-                    <h2 className={styles.sectionTitle}>2. 요청 품목 입력</h2>
-                    <div className={styles.tabsContainer}>
-                        {tabs.map(tab => (
-                            <button key={tab.id} className={`${styles.tabBtn} ${activeTab === tab.id ? styles.activeTab : ''}`} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>
-                        ))}
-                    </div>
+                        {/* 탭 콘텐츠 */}
+                        <div className={styles.tabBody}>
+                            {/* X배너 */}
+                            {activeTab === 'tab1' && (
+                                <div>
+                                    <div className={styles.row}>
+                                        <label>실내용 개수 <input type="number" className={styles.input} value={currentRequest.실내용X배너개수} onChange={e=>setCurrentRequest({...currentRequest, 실내용X배너개수:e.target.value})}/></label>
+                                        <label>실외용 개수 <input type="number" className={styles.input} value={currentRequest.실외용X배너개수} onChange={e=>setCurrentRequest({...currentRequest, 실외용X배너개수:e.target.value})}/></label>
+                                    </div>
+                                    
+                                    <h4 className={styles.subTitle}>디자인 선택</h4>
+                                    
+                                    {/* 모바일: 모달 열기 버튼 / PC: 그리드 바로 표시 */}
+                                    <div className={styles.mobileOnly}>
+                                        <button className={styles.openModalBtn} onClick={() => openModal('xbanner')}>🎨 디자인 이미지 확인 및 선택</button>
+                                        <div className={styles.selectedSummary}>
+                                            선택됨: {currentRequest.x배너디자인.length > 0 ? currentRequest.x배너디자인.join(', ') : '없음'}
+                                        </div>
+                                    </div>
 
-                    <div className={styles.tabContent}>
-                        {activeTab === 'tab1' && (
-                            <div className={styles.fieldGrid}>
-                                <label>실내용 수량 <input type="number" className={styles.input} value={currentRequest.실내용X배너개수} onChange={e=>setCurrentRequest({...currentRequest, 실내용X배너개수:e.target.value})} /></label>
-                                <label>실외용 수량 <input type="number" className={styles.input} value={currentRequest.실외용X배너개수} onChange={e=>setCurrentRequest({...currentRequest, 실외용X배너개수:e.target.value})} /></label>
-                                <p className={styles.helperText}>* 디자인 번호는 기존 PDF나 공지사항을 참고해주세요.</p>
-                            </div>
-                        )}
-                        {activeTab === 'tab2' && (
-                            <div className={styles.fieldGrid}>
-                                <label>가로 (cm) <input type="number" className={styles.input} value={currentRequest.현수막가로} onChange={e=>setCurrentRequest({...currentRequest, 현수막가로:e.target.value})} /></label>
-                                <label>세로 (cm) <input type="number" className={styles.input} value={currentRequest.현수막세로} onChange={e=>setCurrentRequest({...currentRequest, 현수막세로:e.target.value})} /></label>
-                            </div>
-                        )}
-                        {activeTab === 'tab3' && (
-                            <div className={styles.fieldGrid}>
-                                <label>전단지 가로 <input type="text" className={styles.input} value={currentRequest.전단지가로} onChange={e=>setCurrentRequest({...currentRequest, 전단지가로:e.target.value})} /></label>
-                                <label>전단지 세로 <input type="text" className={styles.input} value={currentRequest.전단지세로} onChange={e=>setCurrentRequest({...currentRequest, 전단지세로:e.target.value})} /></label>
-                            </div>
-                        )}
-                        {activeTab === 'tab4' && (
-                            <textarea className={styles.textarea} placeholder="요청 내용을 자세히 적어주세요." value={currentRequest.기타} onChange={e=>setCurrentRequest({...currentRequest, 기타:e.target.value})}></textarea>
-                        )}
-                        {activeTab === 'tab5' && (
-                            <div className={styles.fieldGrid}>
-                                <label>용도 <input type="text" className={styles.input} value={currentRequest.디자인용도} onChange={e=>setCurrentRequest({...currentRequest, 디자인용도:e.target.value})} /></label>
-                                <label>사이즈 <input type="text" className={styles.input} value={currentRequest.디자인사이즈} onChange={e=>setCurrentRequest({...currentRequest, 디자인사이즈:e.target.value})} /></label>
-                            </div>
-                        )}
-                        {activeTab === 'tab6' && (
-                            <div style={{textAlign: 'center', padding: '20px'}}>
-                                <p>필요한 자료나 시안을 확인하세요.</p>
-                                <a href="https://drive.google.com/" target="_blank" className={styles.linkBtn}>📂 구글 드라이브 바로가기</a>
-                            </div>
-                        )}
-                    </div>
-                    <button className={styles.addToCartBtn} onClick={addToCart}>🛒 장바구니에 담기</button>
-                </section>
-
-                {/* 디버그 패널 토글 */}
-                <div className={styles.debugSection}>
-                    <button onClick={() => setShowDebug(!showDebug)} className={styles.debugToggle}>
-                        🛠 디버그 모드 {showDebug ? '끄기' : '켜기'}
-                    </button>
-                    {showDebug && (
-                        <div className={styles.debugPanel}>
-                            <p><strong>Status:</strong> {debugInfo.status}</p>
-                            <p><strong>Error:</strong> {debugInfo.error || 'None'}</p>
-                            <details>
-                                <summary>Server Logs (클릭하여 확인)</summary>
-                                <pre>{debugInfo.logs.join('\n')}</pre>
-                            </details>
-                            <details>
-                                <summary>Loaded Data (클릭하여 확인)</summary>
-                                <p>Users ({users.length}): {JSON.stringify(users.slice(0, 3))} ...</p>
-                                <p>Marts ({marts.length}): {JSON.stringify(marts.slice(0, 3))} ...</p>
-                            </details>
-                        </div>
-                    )}
-                </div>
-            </main>
-
-            {/* 장바구니 사이드바 */}
-            <aside className={`${styles.cartSidebar} ${isCartOpen ? styles.open : ''}`}>
-                 <div className={styles.cartHeader} onClick={() => setIsCartOpen(!isCartOpen)}>
-                    <h3>장바구니 <span className={styles.badge}>{cart.length}</span></h3>
-                    <span className={styles.toggleIcon}>{isCartOpen ? '▼' : '▲'}</span>
-                </div>
-                <div className={styles.cartContent}>
-                    {cart.length === 0 ? (
-                        <p className={styles.emptyMsg}>담긴 요청이 없습니다.</p>
-                    ) : (
-                        cart.map((item) => (
-                            <div key={item.id} className={styles.cartItem}>
-                                <div className={styles.cartItemHeader}>
-                                    <span>{item.martName}</span>
-                                    <span className={styles.dueDate}>~{item.dueDate}</span>
+                                    <div className={`${styles.imageGrid} ${styles.desktopOnly}`}>
+                                        {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
+                                            <label key={num} className={`${styles.imgLabel} ${currentRequest.x배너디자인.includes(`type${num}`) ? styles.selectedImg : ''}`}>
+                                                <img src={`https://fs.qmk.me/template-xbanner-${num}.png`} alt={`디자인 ${num}`} />
+                                                <input type="checkbox" checked={currentRequest.x배너디자인.includes(`type${num}`)} onChange={() => handleXBannerCheck(`type${num}`)} hidden />
+                                                <span>{num}번</span>
+                                            </label>
+                                        ))}
+                                    </div>
                                 </div>
-                                <div className={styles.cartItemBody}>{item.summary}</div>
-                                <button className={styles.removeBtn} onClick={() => removeFromCart(item.id)}>삭제</button>
-                            </div>
-                        ))
-                    )}
-                    
-                    {cart.length > 0 && (
-                         <div className={styles.cartFooter}>
-                            <p className={styles.requesterInfo}>요청자: <strong>{requester || '미지정'}</strong></p>
-                            <button className={styles.submitBtn} onClick={handleSubmitAll} disabled={loading}>
-                                {loading ? '전송 중...' : '모두 제출하기'}
+                            )}
+
+                            {/* 현수막 */}
+                            {activeTab === 'tab2' && (
+                                <div>
+                                    <div className={styles.row}>
+                                        <label>가로(cm) <input type="number" className={styles.input} value={currentRequest.현수막가로} onChange={e=>setCurrentRequest({...currentRequest, 현수막가로:e.target.value})}/></label>
+                                        <label>세로(cm) <input type="number" className={styles.input} value={currentRequest.현수막세로} onChange={e=>setCurrentRequest({...currentRequest, 현수막세로:e.target.value})}/></label>
+                                    </div>
+                                    
+                                    <h4 className={styles.subTitle}>디자인 타입</h4>
+                                    <div className={styles.mobileOnly}>
+                                        <button className={styles.openModalBtn} onClick={() => openModal('banner')}>🎨 현수막 디자인 확인</button>
+                                        <div className={styles.selectedSummary}>선택됨: {currentRequest.현수막디자인 || '미선택'}</div>
+                                    </div>
+
+                                    <div className={`${styles.bannerGrid} ${styles.desktopOnly}`}>
+                                        <label className={`${styles.bannerLabel} ${currentRequest.현수막디자인 === 'type1' ? styles.selectedBanner : ''}`}>
+                                            <input type="radio" name="banner" value="type1" checked={currentRequest.현수막디자인 === 'type1'} onChange={() => setCurrentRequest({...currentRequest, 현수막디자인: 'type1'})} hidden />
+                                            {/* 현수막 이미지는 요청에 따라 가상 링크 사용 */}
+                                            <img src="https://fs.qmk.me/template-banner-1.png" alt="현수막1" onError={(e) => e.target.src='https://placehold.co/400x100?text=Design+1'} />
+                                            <span>디자인 1</span>
+                                        </label>
+                                        <label className={`${styles.bannerLabel} ${currentRequest.현수막디자인 === 'type2' ? styles.selectedBanner : ''}`}>
+                                            <input type="radio" name="banner" value="type2" checked={currentRequest.현수막디자인 === 'type2'} onChange={() => setCurrentRequest({...currentRequest, 현수막디자인: 'type2'})} hidden />
+                                            <img src="https://fs.qmk.me/template-banner-2.png" alt="현수막2" onError={(e) => e.target.src='https://placehold.co/400x100?text=Design+2'} />
+                                            <span>디자인 2</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 나머지 탭들은 입력창 위주이므로 그대로 유지 */}
+                            {activeTab === 'tab3' && (
+                                <div className={styles.row}>
+                                    <label>가로 <input type="text" className={styles.input} value={currentRequest.전단지가로} onChange={e=>setCurrentRequest({...currentRequest, 전단지가로:e.target.value})}/></label>
+                                    <label>세로 <input type="text" className={styles.input} value={currentRequest.전단지세로} onChange={e=>setCurrentRequest({...currentRequest, 전단지세로:e.target.value})}/></label>
+                                </div>
+                            )}
+                            {activeTab === 'tab4' && (
+                                <textarea className={styles.textarea} placeholder="기타 요청사항" value={currentRequest.기타} onChange={e=>setCurrentRequest({...currentRequest, 기타:e.target.value})}></textarea>
+                            )}
+                            {activeTab === 'tab5' && (
+                                <div className={styles.row}>
+                                    <label>용도 <input type="text" className={styles.input} value={currentRequest.디자인용도} onChange={e=>setCurrentRequest({...currentRequest, 디자인용도:e.target.value})}/></label>
+                                    <label>사이즈 <input type="text" className={styles.input} value={currentRequest.디자인사이즈} onChange={e=>setCurrentRequest({...currentRequest, 디자인사이즈:e.target.value})}/></label>
+                                </div>
+                            )}
+                            {activeTab === 'tab6' && (
+                                <div style={{textAlign:'center', padding:'20px'}}>
+                                    <a href="https://drive.google.com/" target="_blank" className={styles.linkBtn}>📂 구글 드라이브 바로가기</a>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className={styles.btnGroup}>
+                            <button className={styles.prevBtn} onClick={() => setStep(1)}>← 이전</button>
+                            <button className={styles.nextBtn} onClick={goNext}>다음 (마감일 선택) →</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* STEP 3: 마감일 및 제출 */}
+                {step === 3 && (
+                    <div className={styles.stepContent}>
+                        <h2 className={styles.title}>마지막으로 확인해주세요.</h2>
+                        
+                        <div className={styles.summaryCard}>
+                            <p><strong>요청자:</strong> {requester}</p>
+                            <p><strong>마트명:</strong> {selectedMart?.name}</p>
+                            <hr className={styles.divider}/>
+                            <p><strong>요청 내역 요약:</strong></p>
+                            <ul className={styles.summaryList}>
+                                {currentRequest.실내용X배너개수 > 0 && <li>실내 X배너: {currentRequest.실내용X배너개수}개</li>}
+                                {currentRequest.실외용X배너개수 > 0 && <li>실외 X배너: {currentRequest.실외용X배너개수}개</li>}
+                                {currentRequest.x배너디자인.length > 0 && <li>X배너 디자인: {currentRequest.x배너디자인.join(', ')}</li>}
+                                {currentRequest.현수막가로 && <li>현수막: {currentRequest.현수막가로}x{currentRequest.현수막세로} ({currentRequest.현수막디자인})</li>}
+                                {currentRequest.전단지가로 && <li>전단지: {currentRequest.전단지가로}x{currentRequest.전단지세로}</li>}
+                                {currentRequest.기타 && <li>기타: {currentRequest.기타}</li>}
+                            </ul>
+                        </div>
+
+                        <div className={styles.formGroup}>
+                            <label className={styles.label}>희망 마감일</label>
+                            <input type="date" className={styles.input} min={minDate} value={dueDate} onChange={(e) => setDueDate(e.target.value)} required />
+                        </div>
+
+                        <div className={styles.btnGroup}>
+                            <button className={styles.prevBtn} onClick={() => setStep(2)}>← 품목 수정</button>
+                            <button className={styles.submitBtn} onClick={handleSubmit} disabled={loading}>
+                                {loading ? '신청 중...' : '신청하기'}
                             </button>
                         </div>
-                    )}
+                    </div>
+                )}
+            </div>
+
+            {/* 모바일 디자인 선택 모달 */}
+            {showDesignModal && (
+                <div className={styles.modalOverlay} onClick={() => setShowDesignModal(false)}>
+                    <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                        <h3>{designModalType === 'xbanner' ? 'X배너 디자인 선택' : '현수막 디자인 선택'}</h3>
+                        <p className={styles.modalDesc}>이미지를 터치하여 선택하세요.</p>
+                        
+                        <div className={styles.modalGrid}>
+                            {designModalType === 'xbanner' ? (
+                                [1, 2, 3, 4, 5, 6, 7, 8].map(num => (
+                                    <label key={num} className={`${styles.imgLabel} ${currentRequest.x배너디자인.includes(`type${num}`) ? styles.selectedImg : ''}`}>
+                                        <img src={`https://fs.qmk.me/template-xbanner-${num}.png`} alt={`디자인 ${num}`} />
+                                        <input type="checkbox" checked={currentRequest.x배너디자인.includes(`type${num}`)} onChange={() => handleXBannerCheck(`type${num}`)} hidden />
+                                        <span>{num}번</span>
+                                    </label>
+                                ))
+                            ) : (
+                                <>
+                                    <label className={`${styles.bannerLabel} ${currentRequest.현수막디자인 === 'type1' ? styles.selectedBanner : ''}`}>
+                                        <input type="radio" name="modal_banner" value="type1" checked={currentRequest.현수막디자인 === 'type1'} onChange={() => setCurrentRequest({...currentRequest, 현수막디자인: 'type1'})} hidden />
+                                        <img src="https://fs.qmk.me/template-banner-1.png" alt="현수막1" onError={(e) => e.target.src='https://placehold.co/400x100?text=Design+1'}/>
+                                        <span>디자인 1</span>
+                                    </label>
+                                    <label className={`${styles.bannerLabel} ${currentRequest.현수막디자인 === 'type2' ? styles.selectedBanner : ''}`}>
+                                        <input type="radio" name="modal_banner" value="type2" checked={currentRequest.현수막디자인 === 'type2'} onChange={() => setCurrentRequest({...currentRequest, 현수막디자인: 'type2'})} hidden />
+                                        <img src="https://fs.qmk.me/template-banner-2.png" alt="현수막2" onError={(e) => e.target.src='https://placehold.co/400x100?text=Design+2'}/>
+                                        <span>디자인 2</span>
+                                    </label>
+                                </>
+                            )}
+                        </div>
+                        <button className={styles.closeModalBtn} onClick={() => setShowDesignModal(false)}>선택 완료</button>
+                    </div>
                 </div>
-            </aside>
-             {isCartOpen && <div className={styles.backdrop} onClick={() => setIsCartOpen(false)}></div>}
+            )}
         </div>
     );
 }
