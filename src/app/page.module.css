@@ -1,153 +1,579 @@
+/* 기본 컨테이너 설정 */
 .container {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     min-height: 100vh;
     background-color: #f5f7fa;
+    color: #333;
 }
 
-/* 진행 단계 표시 */
+/* --- 1. 진행 단계 (Progress Bar) --- */
 .progressBar {
     display: flex;
     justify-content: space-between;
     margin-bottom: 24px;
+    background: #fff;
+    padding: 0 10px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
 }
+
 .stepItem {
     flex: 1;
     text-align: center;
-    padding: 10px;
-    font-size: 0.9rem;
+    padding: 16px 10px;
+    font-size: 0.95rem;
     color: #bbb;
-    border-bottom: 3px solid #eee;
+    border-bottom: 3px solid transparent;
     font-weight: 600;
+    transition: all 0.3s ease;
 }
+
 .activeStep {
     color: #ff6a21;
     border-bottom-color: #ff6a21;
 }
 
+/* --- 2. 카드 및 타이틀 --- */
 .card {
     background: #fff;
-    padding: 24px;
-    border-radius: 16px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    padding: 32px;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
+
 .title {
-    margin: 0 0 24px 0;
-    font-size: 1.4rem;
-    color: #333;
+    margin: 0 0 32px 0;
+    font-size: 1.5rem;
+    color: #1a1a1a;
     text-align: center;
+    font-weight: 800;
+    letter-spacing: -0.5px;
 }
 
-/* 입력 폼 공통 */
-.formGroup { margin-bottom: 20px; }
-.label { display: block; font-weight: 700; margin-bottom: 8px; color: #444; }
-.input, .textarea {
-    width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem;
+.subTitle {
+    margin: 24px 0 12px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #333;
+    border-left: 4px solid #ff6a21;
+    padding-left: 10px;
 }
-.input:focus, .textarea:focus { border-color: #ff6a21; outline: none; }
-.textarea { height: 100px; resize: vertical; }
 
-/* 마트 선택 테이블 */
+/* --- 3. 입력 폼 공통 --- */
+.formGroup {
+    margin-bottom: 24px;
+}
+
+.label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #444;
+    font-size: 0.95rem;
+}
+
+.input,
+.textarea {
+    width: 100%;
+    padding: 14px;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: all 0.2s;
+    background: #fff;
+}
+
+.input:focus,
+.textarea:focus {
+    border-color: #ff6a21;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 106, 33, 0.1);
+}
+
+.textarea {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+/* 한 줄에 두 개의 입력 필드 배치용 */
+.row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.row > label {
+    flex: 1;
+}
+
+/* --- 4. 마트 검색 테이블 --- */
 .tableWrapper {
-    max-height: 300px;
+    max-height: 280px;
     overflow-y: auto;
-    border: 1px solid #eee;
-    border-radius: 8px;
-    margin-top: 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    margin-top: 12px;
 }
+
 .martTable {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
 }
+
 .martTable th {
-    background: #f9f9f9;
-    padding: 10px;
+    background: #f8f9fa;
+    padding: 12px 16px;
     position: sticky;
     top: 0;
     border-bottom: 1px solid #ddd;
     text-align: left;
+    color: #555;
+    font-weight: 700;
+    z-index: 10;
 }
+
 .martTable td {
-    padding: 12px 10px;
-    border-bottom: 1px solid #eee;
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #333;
 }
-.martRow { cursor: pointer; transition: background 0.2s; }
-.martRow:hover { background-color: #f0f0f0; }
-.selectedRow { background-color: #fff4e6 !important; border-left: 4px solid #ff6a21; }
-.disabledRow { color: #aaa; cursor: not-allowed; background-color: #fcfcfc; }
-.statusOk { color: #2e7d32; font-weight: bold; }
-.statusNo { color: #c62828; font-weight: bold; }
-.noResult { text-align: center; color: #999; padding: 20px; }
-.selectionMsg { margin-top: 10px; color: #ff6a21; font-size: 0.95rem; }
 
-/* 탭 */
-.tabs { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 4px; }
+.martRow {
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.martRow:hover {
+    background-color: #f1f3f5;
+}
+
+/* 선택된 행 스타일 */
+.selectedRow {
+    background-color: #fff4e6 !important;
+}
+.selectedRow td:first-child {
+    font-weight: bold;
+    color: #ff6a21;
+}
+
+/* 주문 불가 행 스타일 */
+.disabledRow {
+    color: #aaa !important;
+    cursor: not-allowed;
+    background-color: #fafafa;
+}
+
+.statusOk {
+    color: #2e7d32;
+    font-weight: bold;
+    font-size: 0.85rem;
+    background: #e8f5e9;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.statusNo {
+    color: #c62828;
+    font-weight: bold;
+    font-size: 0.85rem;
+    background: #ffebee;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.noResult {
+    text-align: center;
+    color: #999;
+    padding: 40px;
+}
+
+.selectionMsg {
+    margin-top: 12px;
+    color: #ff6a21;
+    font-size: 0.95rem;
+    background: #fff4e6;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* --- 5. 탭 (Tabs) --- */
+.tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    margin-bottom: 24px;
+    padding-bottom: 4px;
+    scrollbar-width: none; /* Firefox 스크롤 숨김 */
+}
+.tabs::-webkit-scrollbar {
+    display: none; /* Chrome 스크롤 숨김 */
+}
+
 .tabBtn {
-    padding: 8px 16px; border: 1px solid #eee; border-radius: 20px; background: #fff;
-    cursor: pointer; white-space: nowrap; font-weight: 600; color: #666;
+    padding: 10px 20px;
+    border: 1px solid #eee;
+    border-radius: 24px;
+    background: #f8f9fa;
+    cursor: pointer;
+    white-space: nowrap;
+    font-weight: 600;
+    color: #666;
+    font-size: 0.95rem;
+    transition: all 0.2s;
 }
-.activeTab { background: #333; color: #fff; border-color: #333; }
-.tabBody { min-height: 300px; }
 
-/* 그리드 & 이미지 */
-.imageGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
-.bannerGrid { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.activeTab {
+    background: #333;
+    color: #fff;
+    border-color: #333;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.tabBody {
+    min-height: 300px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- 6. 이미지 그리드 (PC 화면용) --- */
+.imageGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.bannerGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 20px;
+}
 
 .imgLabel {
-    cursor: pointer; border: 2px solid transparent; border-radius: 8px; overflow: hidden; position: relative;
-    display: flex; flex-direction: column; align-items: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
 }
-.imgLabel img { width: 100%; height: auto; display: block; }
-.imgLabel:hover { transform: translateY(-2px); }
-.selectedImg { border-color: #ff6a21; box-shadow: 0 0 0 3px rgba(255,106,33,0.2); }
-.selectedImg::after {
-    content: '✔'; position: absolute; top: 5px; right: 5px; background: #ff6a21; color: white;
-    width: 20px; height: 20px; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px;
-}
-.bannerLabel { cursor: pointer; border: 1px solid #ddd; padding: 10px; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
-.bannerLabel img { max-width: 100px; border-radius: 4px; }
-.selectedBanner { border: 2px solid #ff6a21; background: #fff4e6; }
 
-/* 버튼 */
-.btnGroup { display: flex; gap: 10px; margin-top: 30px; }
-.prevBtn { flex: 1; padding: 16px; background: #f0f0f0; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #666; }
-.nextBtn, .submitBtn { flex: 2; padding: 16px; background: #ff6a21; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #fff; font-size: 1rem; }
-.submitBtn:disabled { background: #ccc; cursor: not-allowed; }
+.imgLabel:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.imgLabel img {
+    width: 100%;
+    height: auto;
+    display: block;
+    aspect-ratio: 1/2.5; /* X배너 비율 유지 */
+    object-fit: cover;
+}
+
+.imgLabel span {
+    padding: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #555;
+}
+
+/* 선택된 이미지 스타일 */
+.selectedImg {
+    border-color: #ff6a21;
+    box-shadow: 0 0 0 3px rgba(255, 106, 33, 0.2);
+}
+.selectedImg span {
+    color: #ff6a21;
+    font-weight: 800;
+}
+
+/* 현수막 라벨 스타일 */
+.bannerLabel {
+    cursor: pointer;
+    border: 1px solid #eee;
+    padding: 16px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: #fff;
+    transition: all 0.2s;
+}
+
+.bannerLabel:hover {
+    border-color: #ccc;
+    background: #fafafa;
+}
+
+.bannerLabel img {
+    max-width: 160px;
+    border-radius: 6px;
+    border: 1px solid #eee;
+}
+
+.selectedBanner {
+    border: 2px solid #ff6a21;
+    background: #fff4e6;
+}
+
+/* --- 7. 하단 버튼 그룹 --- */
+.btnGroup {
+    display: flex;
+    gap: 12px;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.prevBtn {
+    flex: 1;
+    padding: 16px;
+    background: #f1f3f5;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    color: #495057;
+    font-size: 1rem;
+    transition: background 0.2s;
+}
+.prevBtn:hover {
+    background: #e9ecef;
+}
+
+.nextBtn,
+.submitBtn {
+    flex: 2;
+    padding: 16px;
+    background: #ff6a21;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    color: #fff;
+    font-size: 1rem;
+    box-shadow: 0 4px 12px rgba(255, 106, 33, 0.25);
+    transition: transform 0.1s, box-shadow 0.2s;
+}
+
+.nextBtn:hover,
+.submitBtn:hover {
+    background: #e55f1e;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(255, 106, 33, 0.35);
+}
+
+.submitBtn:disabled {
+    background: #ced4da;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* --- 8. 요약 카드 (Step 3) --- */
+.summaryCard {
+    background: #f8f9fa;
+    padding: 24px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    border: 1px solid #eee;
+}
+
+.divider {
+    border: 0;
+    border-top: 1px dashed #ced4da;
+    margin: 16px 0;
+}
+
+.summaryList {
+    padding-left: 20px;
+    color: #495057;
+    line-height: 1.6;
+}
+.summaryList li {
+    margin-bottom: 6px;
+}
+
+/* --- 9. 기타 요소 --- */
+.linkBtn {
+    display: inline-block;
+    padding: 12px 24px;
+    background: #e9ecef;
+    text-decoration: none;
+    color: #333;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+.linkBtn:hover {
+    background: #dee2e6;
+}
+
+/* --- 10. 모바일 전용 UI (반응형) --- */
+.mobileOnly {
+    display: none;
+}
+.desktopOnly {
+    display: grid; /* 기본값 */
+}
+
+/* 모바일 디자인 확인 버튼 */
 .openModalBtn {
-    width: 100%; padding: 14px; background: #fff; border: 2px dashed #ff6a21; color: #ff6a21;
-    font-weight: bold; border-radius: 8px; cursor: pointer; margin-bottom: 10px;
+    width: 100%;
+    padding: 16px;
+    background: #fff;
+    border: 2px dashed #ff6a21;
+    color: #ff6a21;
+    font-weight: bold;
+    font-size: 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-bottom: 8px;
+    transition: background 0.2s;
+}
+.openModalBtn:hover {
+    background: #fff4e6;
 }
 
-/* 요약 */
-.summaryCard { background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 24px; }
-.divider { border: 0; border-top: 1px dashed #ddd; margin: 16px 0; }
-.summaryList { padding-left: 20px; color: #555; }
+.selectedSummary {
+    text-align: center;
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 20px;
+}
 
-/* 모달 (모바일 전용) */
+/* --- 11. 모바일 모달 (Modal) --- */
 .modalOverlay {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6);
-    display: flex; justify-content: center; align-items: center; z-index: 1000;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    animation: fadeIn 0.2s;
 }
+
 .modalContent {
-    background: #fff; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto;
-    padding: 24px; border-radius: 16px;
+    background: #fff;
+    width: 90%;
+    max-width: 500px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 24px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    position: relative;
 }
-.modalGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 20px 0; }
-.closeModalBtn { width: 100%; padding: 14px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
-/* 반응형 제어 */
-.mobileOnly { display: none; }
-.desktopOnly { display: grid; } /* 또는 flex */
+.modalDesc {
+    color: #888;
+    margin-bottom: 16px;
+    font-size: 0.9rem;
+}
 
+/* 모달 닫기 버튼 */
+.closeModalBtn {
+    width: 100%;
+    padding: 16px;
+    background: #333;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1rem;
+    margin-top: 24px;
+    position: sticky;
+    bottom: 0;
+}
+
+/* 모달 내부: X배너 그리드 (2열) */
+.modalGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 10px 0;
+}
+
+/* 모달 내부: 현수막 스택 (세로 배치 - 중요!) */
+.modalBannerStack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 10px 0;
+}
+
+/* 모달 안에서 현수막 이미지가 잘 보이도록 스타일 조정 */
+.modalBannerStack .bannerLabel {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+}
+.modalBannerStack .bannerLabel img {
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+}
+
+/* --- 12. 미디어 쿼리 (반응형) --- */
 @media (max-width: 768px) {
-    .container { padding: 10px; }
-    .card { padding: 16px; }
-    .imageGrid { grid-template-columns: repeat(2, 1fr); }
+    .container {
+        padding: 16px 12px;
+    }
+
+    .card {
+        padding: 20px;
+        border-radius: 16px;
+    }
     
-    /* 모바일에서 데스크탑 그리드 숨기고 버튼 보이기 */
-    .desktopOnly { display: none !important; }
-    .mobileOnly { display: block; }
+    .title {
+        font-size: 1.3rem;
+        margin-bottom: 24px;
+    }
+
+    /* 모바일에서는 테이블 높이 제한 해제하거나 줄임 */
+    .tableWrapper {
+        max-height: 220px;
+    }
+
+    /* 한 줄 입력 -> 세로 배치 */
+    .row {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    /* PC용 그리드 숨기고 모바일 UI 활성화 */
+    .desktopOnly {
+        display: none !important;
+    }
+    .mobileOnly {
+        display: block;
+    }
+
+    /* 탭 버튼 작게 */
+    .tabBtn {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+    }
 }
