@@ -1,69 +1,258 @@
-/* 탭 스타일 */
-.tabsWrapper { position: relative; margin-bottom: 24px; overflow: hidden; }
-.tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; padding-right: 40px; scrollbar-width: none; }
-.tabs::-webkit-scrollbar { display: none; }
+/* 탭 네비게이션 스타일 */
+.tabsWrapper {
+    position: relative;
+    margin-bottom: 24px;
+    overflow: hidden; /* 영역 밖으로 나가는 스크롤바 숨김 */
+}
+
+.tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    padding-right: 40px; /* 우측 그라데이션 공간 확보 */
+    scrollbar-width: none; /* Firefox 스크롤바 숨김 */
+}
+.tabs::-webkit-scrollbar {
+    display: none; /* Chrome 스크롤바 숨김 */
+}
+
+/* 우측 스크롤 힌트 (그라데이션) */
 .scrollHint {
-    position: absolute; top: 0; right: 0; bottom: 4px; width: 40px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 4px;
+    width: 40px;
     background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,1));
-    pointer-events: none; z-index: 2;
+    pointer-events: none; /* 클릭 통과 */
+    z-index: 2;
 }
+
 .tabBtn {
-    padding: 10px 20px; border: 1px solid #eee; border-radius: 24px; background: #f8f9fa;
-    cursor: pointer; white-space: nowrap; font-weight: 600; color: #666; font-size: 0.95rem; transition: all 0.2s;
+    padding: 10px 20px;
+    border: 1px solid #eee;
+    border-radius: 24px;
+    background: #f8f9fa;
+    cursor: pointer;
+    white-space: nowrap;
+    font-weight: 600;
+    color: #666;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    flex-shrink: 0; /* 버튼 찌그러짐 방지 */
 }
-.activeTab { background: #333; color: #fff; border-color: #333; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-.tabBody { min-height: 300px; }
 
-/* 이미지 그리드 & 현수막 */
-.subTitle { margin: 24px 0 12px; font-size: 1.1rem; font-weight: 700; color: #333; border-left: 4px solid #ff6a21; padding-left: 10px; }
-.imageGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 20px; }
-.bannerGrid { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; }
-
-.imgLabel, .bannerLabel {
-    cursor: pointer; border: 2px solid transparent; border-radius: 12px; overflow: hidden;
-    display: flex; flex-direction: column; align-items: center; background: #fff;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.2s;
+.activeTab {
+    background: #333;
+    color: #fff;
+    border-color: #333;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
-.imgLabel:hover, .bannerLabel:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-.imgLabel img { width: 100%; aspect-ratio: 1/2.5; object-fit: cover; }
-.imgLabel span { padding: 8px; font-size: 0.9rem; font-weight: 600; color: #555; }
-.selectedImg { border-color: #ff6a21; box-shadow: 0 0 0 3px rgba(255, 106, 33, 0.2); }
-.selectedImg span { color: #ff6a21; font-weight: 800; }
 
-.bannerLabel { padding: 24px; gap: 16px; border: 1px solid #eee; text-align: center; }
-.bannerLabel:hover { border-color: #ccc; background: #fafafa; }
-.bannerLabel img { width: 100%; max-width: 100%; height: auto; border-radius: 6px; border: 1px solid #eee; object-fit: contain; }
-.selectedBanner { border: 2px solid #ff6a21; background: #fff4e6; }
+.tabBody {
+    min-height: 300px;
+}
 
-/* 자료실 스타일 업데이트 */
+/* 디자인 선택 영역 */
+.subTitle {
+    margin: 24px 0 12px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #333;
+    border-left: 4px solid #ff6a21;
+    padding-left: 10px;
+}
+
+/* PC용 그리드 레이아웃 */
+.imageGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.bannerGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+/* 이미지 라벨 공통 (X배너) */
+.imgLabel {
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+}
+
+.imgLabel:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.imgLabel img {
+    width: 100%;
+    aspect-ratio: 1/2.5;
+    object-fit: cover;
+}
+
+.imgLabel span {
+    padding: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #555;
+}
+
+.selectedImg {
+    border-color: #ff6a21;
+    box-shadow: 0 0 0 3px rgba(255, 106, 33, 0.2);
+}
+.selectedImg span {
+    color: #ff6a21;
+    font-weight: 800;
+}
+
+/* 현수막 라벨 (세로 배치 + 이미지 크게) */
+.bannerLabel {
+    cursor: pointer;
+    border: 1px solid #eee;
+    padding: 24px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column; /* 텍스트 아래로 */
+    align-items: center;
+    gap: 16px;
+    background: #fff;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.bannerLabel:hover {
+    border-color: #ccc;
+    background: #fafafa;
+}
+
+.bannerLabel img {
+    width: 100%;
+    max-width: 100%; /* 제한 해제 */
+    height: auto;
+    border-radius: 6px;
+    border: 1px solid #eee;
+    object-fit: contain;
+}
+
+.selectedBanner {
+    border: 2px solid #ff6a21;
+    background: #fff4e6;
+}
+
+/* 자료실 (Reference Room) 스타일 */
 .refContainer {
-    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 24px; padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 24px;
+    padding: 20px 0;
 }
+
+.refDesc {
+    color: #666;
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
 .qrWrapper {
-    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
 }
+
 .qrImage {
-    max-width: 160px; border: 1px solid #eee; border-radius: 12px; padding: 10px;
+    max-width: 200px; /* 화면 표시용 크기 제한 */
+    width: 100%;
+    border: 1px solid #eee;
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
+
 .downloadBtn {
-    font-size: 0.85rem; color: #666; text-decoration: none; padding: 6px 12px;
-    background: #f1f3f5; border-radius: 20px; transition: background 0.2s;
+    display: inline-block;
+    font-size: 0.9rem;
+    color: #555;
+    text-decoration: none;
+    padding: 8px 16px;
+    background: #f1f3f5;
+    border-radius: 20px;
+    border: 1px solid #e0e0e0;
+    transition: all 0.2s;
+    font-weight: 600;
 }
-.downloadBtn:hover { background: #e9ecef; }
+
+.downloadBtn:hover {
+    background: #e9ecef;
+    border-color: #ccc;
+    color: #333;
+}
 
 .driveLinkBtn {
-    display: inline-block; padding: 16px 32px; background: #333; color: #fff;
-    text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 1.1rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s;
+    display: inline-block;
+    padding: 16px 32px;
+    background: #333;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
 }
-.driveLinkBtn:hover { transform: translateY(-2px); background: #444; }
-/* 모바일 전용 버튼 */
-.openModalBtn {
-    width: 100%; padding: 16px; background: #fff; border: 2px dashed #ff6a21; color: #ff6a21;
-    font-weight: bold; font-size: 1rem; border-radius: 10px; cursor: pointer; margin-bottom: 8px;
-}
-.selectedSummary { text-align: center; font-size: 0.9rem; color: #666; margin-bottom: 20px; }
 
+.driveLinkBtn:hover {
+    transform: translateY(-2px);
+    background: #444;
+}
+
+/* 모바일 전용 버튼 스타일 (탭 내부) */
+.openModalBtn {
+    width: 100%;
+    padding: 16px;
+    background: #fff;
+    border: 2px dashed #ff6a21;
+    color: #ff6a21;
+    font-weight: bold;
+    font-size: 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-bottom: 8px;
+    transition: background 0.2s;
+}
+
+.openModalBtn:hover {
+    background: #fff4e6;
+}
+
+.selectedSummary {
+    text-align: center;
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+/* 반응형 미디어 쿼리 */
 @media (max-width: 768px) {
-    .tabBtn { padding: 8px 14px; font-size: 0.85rem; }
+    .tabBtn {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+    }
 }
