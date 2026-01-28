@@ -31,7 +31,7 @@ export default function Home() {
     };
     const [currentRequest, setCurrentRequest] = useState(initialRequest);
 
-    // 초기 데이터 로드 (JSON 에러 방지 로직 적용)
+    // 초기 데이터 로드 (API 연결 및 에러 방지)
     useEffect(() => {
         setMinDate(new Date().toISOString().split('T')[0]);
         
@@ -42,8 +42,7 @@ export default function Home() {
                 // HTML 에러 페이지가 오는지 확인 (Vercel 에러 방지)
                 const contentType = res.headers.get("content-type");
                 if (!contentType || !contentType.includes("application/json")) {
-                    console.error("Received Content-Type:", contentType);
-                    throw new Error("서버 응답이 올바르지 않습니다. (API 에러)");
+                    throw new Error("서버 응답 오류 (JSON 아님)");
                 }
 
                 const data = await res.json();
@@ -51,10 +50,10 @@ export default function Home() {
                     setUsers(data.users || []);
                     setMarts(data.marts || []);
                 } else {
-                    throw new Error(data.error || '데이터 로드 실패');
+                    console.error(data.error);
                 }
             } catch (err) {
-                console.error(err);
+                console.error('데이터 로드 실패:', err);
             }
         }
         fetchData();
@@ -65,10 +64,9 @@ export default function Home() {
         m.name.toLowerCase().includes(martSearch.toLowerCase())
     );
 
-    // [New] 숫자 입력 핸들러 (음수 방지)
+    // 숫자 입력 핸들러 (음수 방지)
     const handleNumberChange = (e, field) => {
         let val = e.target.value;
-        // 빈 값이면 그대로 두고, 숫자인 경우 음수면 0으로 처리
         if (val !== '' && Number(val) < 0) {
             val = 0;
         }
@@ -91,7 +89,25 @@ export default function Home() {
         setCurrentRequest(prev => ({ ...prev, x배너디자인: newDesign }));
     };
 
-    // [Updated] 다음 단계로 이동 (검증 로직 추가)
+    // 상단 탭 클릭 핸들러 (네비게이션)
+    const handleStepClick = (targetStep) => {
+        // 현재 단계보다 이전 단계로는 언제든 이동 가능
+        if (targetStep < step) {
+            setStep(targetStep);
+        } else if (targetStep > step) {
+            // 미래 단계로 가려면 현재 단계의 유효성 검사를 통과해야 함
+            // 예: 1->2 갈 때 검사
+            if (step === 1 && targetStep === 2) {
+                if (!requester || !selectedMart) {
+                    return alert('요청자와 마트를 먼저 선택해주세요.');
+                }
+                setStep(2);
+            }
+            // 2->3 갈 때 검사 (goNext 로직 재사용 권장하나 간단히 처리)
+        }
+    };
+
+    // 다음 단계로 이동 (유효성 검사 포함)
     const goNext = () => {
         if (step === 1) {
             if (!requester) return alert('요청자를 선택해주세요.');
@@ -106,14 +122,9 @@ export default function Home() {
             }
 
             // 2. 현수막 검증
-            // 가로 또는 세로 사이즈가 입력되었는데 디자인을 선택하지 않은 경우
             if ((currentRequest.현수막가로 || currentRequest.현수막세로) && !currentRequest.현수막디자인) {
                 return alert('현수막 사이즈를 입력하셨습니다. 디자인 타입을 선택해주세요.');
             }
-
-            // (추가) 음수 값 최종 확인 (Input에서 막지만 안전장치)
-            if (Number(currentRequest.현수막가로) < 0 || Number(currentRequest.현수막세로) < 0) return alert('사이즈는 음수일 수 없습니다.');
-            if (Number(currentRequest.전단지가로) < 0 || Number(currentRequest.전단지세로) < 0) return alert('사이즈는 음수일 수 없습니다.');
         }
         
         setStep(prev => prev + 1);
@@ -169,9 +180,21 @@ export default function Home() {
         <div className={styles.container}>
             {/* 상단 진행바 */}
             <div className={styles.progressBar}>
-                <div className={`${styles.stepItem} ${step >= 1 ? styles.activeStep : ''}`}>1. 기본정보</div>
-                <div className={`${styles.stepItem} ${step >= 2 ? styles.activeStep : ''}`}>2. 품목선택</div>
-                <div className={`${styles.stepItem} ${step >= 3 ? styles.activeStep : ''}`}>3. 신청완료</div>
+                <div 
+                    className={`${styles.stepItem} ${step >= 1 ? styles.activeStep : ''} ${styles.clickableStep}`}
+                    onClick={() => handleStepClick(1)}
+                >
+                    1. 기본정보
+                </div>
+                <div 
+                    className={`${styles.stepItem} ${step >= 2 ? styles.activeStep : ''} ${step >= 2 ? styles.clickableStep : ''}`}
+                    onClick={() => handleStepClick(2)}
+                >
+                    2. 품목선택
+                </div>
+                <div className={`${styles.stepItem} ${step >= 3 ? styles.activeStep : ''}`}>
+                    3. 신청완료
+                </div>
             </div>
 
             <div className={styles.card}>
@@ -211,8 +234,9 @@ export default function Home() {
                                     <thead>
                                         <tr>
                                             <th>마트명</th>
+                                            <th>담당자</th> {/* 담당자 컬럼 추가 */}
                                             <th>상태</th>
-                                            <th>등록일</th>
+                                            <th className={styles.hideOnMobile}>등록일</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -223,20 +247,21 @@ export default function Home() {
                                                 onClick={() => mart.orderable && setSelectedMart(mart)}
                                             >
                                                 <td>{mart.name}</td>
+                                                <td>{mart.manager}</td> {/* 담당자 데이터 */}
                                                 <td>
                                                     <span className={mart.orderable ? styles.statusOk : styles.statusNo}>
                                                         {mart.orderable ? '가능' : '불가'}
                                                     </span>
                                                 </td>
-                                                <td>{mart.date}</td>
+                                                <td className={styles.hideOnMobile}>{mart.date}</td>
                                             </tr>
                                         )) : (
-                                            <tr><td colSpan="3" className={styles.noResult}>검색 결과가 없습니다.</td></tr>
+                                            <tr><td colSpan="4" className={styles.noResult}>검색 결과가 없습니다.</td></tr>
                                         )}
                                     </tbody>
                                 </table>
                             </div>
-                            {selectedMart && <p className={styles.selectionMsg}>선택된 마트: <strong>{selectedMart.name}</strong></p>}
+                            {selectedMart && <p className={styles.selectionMsg}>선택된 마트: <strong>{selectedMart.name}</strong> ({selectedMart.manager})</p>}
                         </div>
 
                         <button className={styles.nextBtn} onClick={goNext}>다음 단계로 →</button>
@@ -342,7 +367,7 @@ export default function Home() {
                                         <div className={styles.selectedSummary}>선택됨: {currentRequest.현수막디자인 || '미선택'}</div>
                                     </div>
 
-                                    {/* 데스크탑: 세로형 리스트 */}
+                                    {/* 데스크탑: 세로형 리스트 (이미지 크게) */}
                                     <div className={`${styles.bannerGrid} ${styles.desktopOnly}`}>
                                         <label className={`${styles.bannerLabel} ${currentRequest.현수막디자인 === 'type1' ? styles.selectedBanner : ''}`}>
                                             <input type="radio" name="banner" value="type1" checked={currentRequest.현수막디자인 === 'type1'} onChange={() => setCurrentRequest({...currentRequest, 현수막디자인: 'type1'})} hidden />
@@ -411,7 +436,7 @@ export default function Home() {
                         
                         <div className={styles.summaryCard}>
                             <p><strong>요청자:</strong> {requester}</p>
-                            <p><strong>마트명:</strong> {selectedMart?.name}</p>
+                            <p><strong>마트명:</strong> {selectedMart?.name} <small>({selectedMart?.manager})</small></p>
                             <hr className={styles.divider}/>
                             <p><strong>요청 내역 요약:</strong></p>
                             <ul className={styles.summaryList}>
