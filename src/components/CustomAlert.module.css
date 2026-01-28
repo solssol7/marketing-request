@@ -1,0 +1,31 @@
+/* src/components/CustomAlert.module.css */
+.overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px);
+    display: flex; justify-content: center; align-items: center; z-index: 10000;
+    animation: fadeIn 0.2s;
+}
+
+.modal {
+    background: #fff; width: 90%; max-width: 320px;
+    border-radius: 16px; padding: 24px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    text-align: center;
+    animation: popUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.body p {
+    margin: 0 0 24px; font-size: 1rem; color: #333; line-height: 1.5; white-space: pre-wrap;
+}
+
+.footer { display: flex; gap: 8px; justify-content: center; }
+
+.okBtn, .confirmBtn, .cancelBtn {
+    flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+}
+
+.okBtn, .confirmBtn { background: #ff6a21; color: #fff; }
+.cancelBtn { background: #f1f3f5; color: #555; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
