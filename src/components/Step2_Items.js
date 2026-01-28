@@ -13,6 +13,11 @@ export default function Step2_Items({
         <div className={common.stepContent}>
             <h2 className={common.title}>{selectedMart?.name}에 필요한 물품은?</h2>
             
+            {/* [New] 가이드 텍스트 */}
+            <p className={common.guideText}>
+                2. 필요한 품목을 선택하면 여러 종류를 한꺼번에 신청이 가능합니다.
+            </p>
+
             <div className={styles.tabsWrapper}>
                 <div className={styles.tabs}>
                     {tabIds.map((tab, idx) => (
@@ -78,15 +83,18 @@ export default function Step2_Items({
                 {activeTab === 'tab4' && <textarea className={common.textarea} placeholder="기타 요청사항을 자세히 적어주세요." value={currentRequest.기타} onChange={(e) => handleTextChange(e, '기타')}></textarea>}
                 {activeTab === 'tab5' && <div className={common.row}><label className={common.label}>용도 <input type="text" className={common.input} value={currentRequest.디자인용도} onChange={(e) => handleTextChange(e, '디자인용도')}/></label><label className={common.label}>사이즈 <input type="text" className={common.input} value={currentRequest.디자인사이즈} onChange={(e) => handleTextChange(e, '디자인사이즈')}/></label></div>}
                 
-                {/* [New] Tab 6: 자료실 (QR 코드 및 링크) */}
+                {/* Tab 6: 자료실 (QR 다운로드 및 링크) */}
                 {activeTab === 'tab6' && (
                     <div className={styles.refContainer}>
                         <div className={styles.refDesc}>
                             <p><strong>QR 코드</strong>를 스캔하거나 버튼을 눌러<br/>공용 문서함 및 디자인 리소스를 확인하세요.</p>
                         </div>
                         
-                        {/* 사용자 파일 qrcode.png 사용 */}
-                        <img src="/qrcode.png" alt="Google Drive QR Code" className={styles.qrImage} />
+                        <div className={styles.qrWrapper}>
+                            <img src="/qrcode.png" alt="Google Drive QR Code" className={styles.qrImage} />
+                            {/* [New] 다운로드 버튼 */}
+                            <a href="/qrcode.png" download="qrcode.png" className={styles.downloadBtn}>⬇ QR 다운로드</a>
+                        </div>
                         
                         <a href="https://drive.google.com/drive/folders/187vViWyscfKTP9s1DmCCAQvU6_IB3U-Z" target="_blank" className={styles.driveLinkBtn}>
                             📂 구글 드라이브 열기
