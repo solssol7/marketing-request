@@ -33,7 +33,7 @@ export default function Step2_Items({
             </div>
 
             <div className={styles.tabBody}>
-                {/* Tab 1: X배너 (16종) */}
+                {/* Tab 1: X배너 */}
                 {activeTab === 'tab1' && (
                     <div>
                         <div className={common.row}>
@@ -57,7 +57,7 @@ export default function Step2_Items({
                     </div>
                 )}
 
-                {/* Tab 2: 현수막 (6종) */}
+                {/* Tab 2: 현수막 */}
                 {activeTab === 'tab2' && (
                     <div>
                         <div className={common.row}>
@@ -86,7 +86,7 @@ export default function Step2_Items({
                 {activeTab === 'tab4' && <textarea className={common.textarea} placeholder="기타 요청사항을 자세히 적어주세요." value={currentRequest.기타} onChange={(e) => handleTextChange(e, '기타')}></textarea>}
                 {activeTab === 'tab5' && <div className={common.row}><label className={common.label}>용도 <input type="text" className={common.input} value={currentRequest.디자인용도} onChange={(e) => handleTextChange(e, '디자인용도')}/></label><label className={common.label}>사이즈 <input type="text" className={common.input} value={currentRequest.디자인사이즈} onChange={(e) => handleTextChange(e, '디자인사이즈')}/></label></div>}
                 
-                {/* Tab 6: 자료실 (링크 수정됨) */}
+                {/* Tab 6: 자료실 (고해상도 QR 적용) */}
                 {activeTab === 'tab6' && (
                     <div className={styles.refContainer}>
                         <div className={styles.refDesc}>
@@ -94,8 +94,12 @@ export default function Step2_Items({
                         </div>
                         
                         <div className={styles.qrWrapper}>
-                            <img src="/qrcode.png" alt="Google Drive QR Code" className={styles.qrImage} />
-                            <a href="/qrcode.png" download="qrcode.png" className={styles.downloadBtn}>⬇ QR 다운로드</a>
+                            {/* 화면엔 적당한 크기로 표시하지만, 다운로드는 원본(HD) 파일 연결 */}
+                            <img src="/qrcode_hd.png" alt="Google Drive QR Code" className={styles.qrImage} />
+                            
+                            <a href="/qrcode_hd.png" download="Qmarket_QR_HD.png" className={styles.downloadBtn}>
+                                ⬇ 고해상도 QR 다운로드
+                            </a>
                         </div>
                         
                         <a href="https://drive.google.com/drive/folders/1LCkZ-fryH7aWBll2zH_qp9NwfalGKQU0" target="_blank" className={styles.driveLinkBtn}>
