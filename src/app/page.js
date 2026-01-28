@@ -112,15 +112,29 @@ export default function Home() {
         }
     };
 
+    // 다음 단계로 이동 (검증 포함)
     const goNext = () => {
         if (step === 1) {
             if (!requester) return showAlert('요청자를 선택해주세요.');
             if (!selectedMart) return showAlert('마트를 선택해주세요.');
         }
         if (step === 2) {
+            // X배너 검증
             const xCount = Number(currentRequest.실내용X배너개수 || 0) + Number(currentRequest.실외용X배너개수 || 0);
             if (xCount > 0 && currentRequest.x배너디자인.length === 0) return showAlert('X배너 수량을 입력하셨습니다.\n디자인을 최소 1개 이상 선택해주세요.');
-            if ((currentRequest.현수막가로 || currentRequest.현수막세로) && !currentRequest.현수막디자인) return showAlert('현수막 사이즈를 입력하셨습니다.\n디자인 타입을 선택해주세요.');
+            
+            // 현수막 검증
+            if (currentRequest.현수막가로 || currentRequest.현수막세로) {
+                // 디자인 선택 여부
+                if (!currentRequest.현수막디자인) return showAlert('현수막 사이즈를 입력하셨습니다.\n디자인 타입을 선택해주세요.');
+                
+                // [New] 사이즈 단위 검증 (0 또는 5로 끝나는지 확인)
+                const width = Number(currentRequest.현수막가로);
+                const height = Number(currentRequest.현수막세로);
+                if (width % 5 !== 0 || height % 5 !== 0) {
+                    return showAlert('현수막 치수는 0 또는 5 단위로 입력해주세요.\n(예: 1213 → 1215)');
+                }
+            }
         }
         setStep(prev => prev + 1);
     };
@@ -129,7 +143,7 @@ export default function Home() {
         if (!dueDate) return showAlert('마감기한을 입력해주세요.');
         
         showConfirm('작성하신 내용으로 신청하시겠습니까?', async () => {
-            closeAlert(); // 확인창 닫기
+            closeAlert(); 
             setLoading(true);
             try {
                 const payload = {
@@ -146,7 +160,7 @@ export default function Home() {
                 
                 if (result.success) {
                     showAlert('요청이 성공적으로 완료되었습니다.');
-                    setTimeout(() => window.location.reload(), 1500); // 알림 확인 후 리로드
+                    setTimeout(() => window.location.reload(), 1500); 
                 } else throw new Error(result.error);
             } catch (err) { showAlert('오류 발생: ' + err.message); } 
             finally { setLoading(false); }
