@@ -53,6 +53,11 @@
     box-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
 
+/* [추가됨] 단계별 콘텐츠 래퍼 (애니메이션 효과) */
+.stepContent {
+    animation: fadeIn 0.4s ease-out;
+}
+
 .title {
     margin: 0 0 32px 0;
     font-size: 1.5rem;
@@ -173,11 +178,10 @@
 /* 주문 불가 행 스타일 */
 .disabledRow {
     color: #aaa !important;
-    cursor: not-allowed;
+    cursor: pointer; /* 클릭 가능 */
     background-color: #fafafa;
 }
 
-/* 상태 뱃지 (줄바꿈 방지 적용) */
 .statusOk {
     color: #2e7d32;
     font-weight: bold;
@@ -223,10 +227,10 @@
     overflow-x: auto;
     margin-bottom: 24px;
     padding-bottom: 4px;
-    scrollbar-width: none;
+    scrollbar-width: none; /* Firefox 스크롤 숨김 */
 }
 .tabs::-webkit-scrollbar {
-    display: none;
+    display: none; /* Chrome 스크롤 숨김 */
 }
 
 .tabBtn {
@@ -297,7 +301,7 @@
     width: 100%;
     height: auto;
     display: block;
-    aspect-ratio: 1/2.5;
+    aspect-ratio: 1/2.5; /* X배너 비율 유지 */
     object-fit: cover;
 }
 
@@ -308,6 +312,7 @@
     color: #555;
 }
 
+/* 선택된 이미지 스타일 */
 .selectedImg {
     border-color: #ff6a21;
     box-shadow: 0 0 0 3px rgba(255, 106, 33, 0.2);
@@ -317,14 +322,14 @@
     font-weight: 800;
 }
 
-/* 현수막 라벨 (세로 배치 + 이미지 크게) */
+/* 현수막 라벨 스타일 (이미지 크게 보이기 + 세로 배치) */
 .bannerLabel {
     cursor: pointer;
     border: 1px solid #eee;
     padding: 24px;
     border-radius: 12px;
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* 텍스트가 이미지 아래로 */
     align-items: center;
     gap: 16px;
     background: #fff;
@@ -339,7 +344,7 @@
 
 .bannerLabel img {
     width: 100%;
-    max-width: 100%;
+    max-width: 100%; /* 제한 해제 */
     height: auto;
     border-radius: 6px;
     border: 1px solid #eee;
@@ -405,7 +410,7 @@
     transform: none;
 }
 
-/* --- 8. 요약 카드 --- */
+/* --- 8. 요약 카드 (Step 3) --- */
 .summaryCard {
     background: #f8f9fa;
     padding: 24px;
@@ -444,12 +449,12 @@
     background: #dee2e6;
 }
 
-/* --- 10. 모바일 전용 UI --- */
+/* --- 10. 모바일 전용 UI (반응형) --- */
 .mobileOnly {
     display: none;
 }
 .desktopOnly {
-    display: grid;
+    display: grid; /* 기본값 */
 }
 
 /* 모바일 디자인 확인 버튼 */
@@ -477,7 +482,7 @@
     margin-bottom: 20px;
 }
 
-/* --- 11. 모바일 모달 --- */
+/* --- 11. 모바일 모달 (Modal) --- */
 .modalOverlay {
     position: fixed;
     top: 0;
@@ -511,6 +516,7 @@
     font-size: 0.9rem;
 }
 
+/* 모달 닫기 버튼 */
 .closeModalBtn {
     width: 100%;
     padding: 16px;
@@ -526,6 +532,7 @@
     bottom: 0;
 }
 
+/* 모달 내부: X배너 그리드 (2열) */
 .modalGrid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -533,6 +540,7 @@
     margin: 10px 0;
 }
 
+/* 모달 내부: 현수막 스택 (세로 배치) */
 .modalBannerStack {
     display: flex;
     flex-direction: column;
@@ -540,6 +548,7 @@
     margin: 10px 0;
 }
 
+/* 모달 안에서 현수막 이미지가 잘 보이도록 스타일 조정 */
 .modalBannerStack .bannerLabel {
     flex-direction: column;
     align-items: center;
@@ -552,7 +561,7 @@
     height: auto;
 }
 
-/* --- 12. 미디어 쿼리 --- */
+/* --- 12. 미디어 쿼리 (반응형) --- */
 @media (max-width: 768px) {
     .container {
         padding: 16px 12px;
@@ -568,15 +577,18 @@
         margin-bottom: 24px;
     }
 
+    /* 모바일에서는 테이블 높이 제한 해제하거나 줄임 */
     .tableWrapper {
         max-height: 220px;
     }
 
+    /* 한 줄 입력 -> 세로 배치 */
     .row {
         flex-direction: column;
         gap: 12px;
     }
 
+    /* PC용 그리드 숨기고 모바일 UI 활성화 */
     .desktopOnly {
         display: none !important;
     }
@@ -584,6 +596,7 @@
         display: block;
     }
 
+    /* 탭 버튼 작게 */
     .tabBtn {
         padding: 8px 14px;
         font-size: 0.85rem;
