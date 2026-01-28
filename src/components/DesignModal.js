@@ -6,6 +6,9 @@ export default function DesignModal({
 }) {
     if (!isOpen) return null;
 
+    const xBannerList = Array.from({ length: 16 }, (_, i) => i + 1);
+    const bannerList = Array.from({ length: 6 }, (_, i) => i + 1);
+
     return (
         <div className={styles.overlay} onClick={onClose}>
             <div className={styles.content} onClick={(e) => e.stopPropagation()}>
@@ -19,19 +22,19 @@ export default function DesignModal({
                     
                     <div className={type === 'xbanner' ? styles.grid : styles.stack}>
                         {type === 'xbanner' ? (
-                            [1, 2, 3, 4, 5, 6, 7, 8].map(num => (
+                            xBannerList.map(num => (
                                 <label key={num} className={`${itemStyles.imgLabel} ${currentRequest.x배너디자인.includes(`type${num}`) ? itemStyles.selectedImg : ''}`}>
-                                    <img src={`https://fs.qmk.me/template-xbanner-${num}.png`} alt={`디자인 ${num}`} />
+                                    <img src={`https://fs.qmk.me/template-xbanner-${num}-202601.webp`} alt={`디자인 ${num}`} loading="lazy" />
                                     <input type="checkbox" checked={currentRequest.x배너디자인.includes(`type${num}`)} onChange={() => handleXBannerCheck(`type${num}`)} hidden />
                                     <span>{num}번</span>
                                 </label>
                             ))
                         ) : (
-                            ['type1', 'type2'].map((bType, idx) => (
-                                <label key={bType} className={`${itemStyles.bannerLabel} ${currentRequest.현수막디자인 === bType ? itemStyles.selectedBanner : ''}`}>
-                                    <input type="radio" name="modal_banner" value={bType} checked={currentRequest.현수막디자인 === bType} onChange={() => handleBannerTypeChange(bType)} hidden />
-                                    <img src={`https://fs.qmk.me/template-banner-${idx + 1}.png`} alt={`디자인 ${idx + 1}`} onError={(e) => e.target.src='https://placehold.co/400x100?text=Design'}/>
-                                    <span>디자인 {idx + 1}</span>
+                            bannerList.map(num => (
+                                <label key={num} className={`${itemStyles.bannerLabel} ${currentRequest.현수막디자인 === `type${num}` ? itemStyles.selectedBanner : ''}`}>
+                                    <input type="radio" name="modal_banner" value={`type${num}`} checked={currentRequest.현수막디자인 === `type${num}`} onChange={() => handleBannerTypeChange(`type${num}`)} hidden />
+                                    <img src={`https://fs.qmk.me/template-banner-${num}-202601.webp`} alt={`디자인 ${num}`} onError={(e) => e.target.src='https://placehold.co/600x150?text=Design'} loading="lazy" />
+                                    <span>디자인 {num}</span>
                                 </label>
                             ))
                         )}
