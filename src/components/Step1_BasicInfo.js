@@ -19,7 +19,7 @@ export default function Step1_BasicInfo({
 
     return (
         <div className={styles.stepContent}>
-            <h2 className={styles.title}>누가, 어떤 마트를 요청하나요?</h2>
+            <h2 className={styles.title}> 어떤 마트의 유인물을 요청하시나요?</h2>
             
             <div className={styles.formGroup}>
                 <label className={styles.label}>요청자 선택</label>
