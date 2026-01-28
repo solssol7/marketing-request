@@ -9,7 +9,13 @@ export default function Step1_BasicInfo({
 
     return (
         <div className={common.stepContent}>
-            <h2 className={common.title}>어떤 마트의 유인물을 요청하시나요?</h2>
+            <h2 className={common.title}>마트 유인물 신청</h2>
+            
+            {/* [New] 가이드 텍스트 */}
+            <p className={common.guideText}>
+                요청자 및 마트를 검색 후 선택해서 신청하세요.<br/>
+                (미오픈 상태도 선택 가능합니다)
+            </p>
             
             <div className={common.formGroup}>
                 <label className={common.label}>요청자 선택</label>
@@ -24,9 +30,7 @@ export default function Step1_BasicInfo({
                 <div className={styles.tableWrapper}>
                     <table className={styles.martTable}>
                         <thead>
-                            <tr>
-                                <th>마트명</th><th>담당자</th><th>상태</th><th className={styles.hideOnMobile}>등록일</th>
-                            </tr>
+                            <tr><th>마트명</th><th>담당자</th><th>상태</th><th className={styles.hideOnMobile}>등록일</th></tr>
                         </thead>
                         <tbody>
                             {filteredMarts.length > 0 ? filteredMarts.map((mart) => (
