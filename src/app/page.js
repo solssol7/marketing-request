@@ -64,6 +64,15 @@ export default function Home() {
         m.name.toLowerCase().includes(martSearch.toLowerCase())
     );
 
+    // [New] 마트 선택 핸들러 (주문 불가 시 확인창)
+    const handleMartSelect = (mart) => {
+        if (!mart.orderable) {
+            const isConfirmed = confirm('현재 선택하신 마트는 [주문 불가] 상태입니다.\n그래도 계속 신청하시겠습니까?');
+            if (!isConfirmed) return; 
+        }
+        setSelectedMart(mart);
+    };
+
     // 숫자 입력 핸들러 (음수 방지)
     const handleNumberChange = (e, field) => {
         let val = e.target.value;
@@ -91,19 +100,15 @@ export default function Home() {
 
     // 상단 탭 클릭 핸들러 (네비게이션)
     const handleStepClick = (targetStep) => {
-        // 현재 단계보다 이전 단계로는 언제든 이동 가능
         if (targetStep < step) {
             setStep(targetStep);
         } else if (targetStep > step) {
-            // 미래 단계로 가려면 현재 단계의 유효성 검사를 통과해야 함
-            // 예: 1->2 갈 때 검사
             if (step === 1 && targetStep === 2) {
                 if (!requester || !selectedMart) {
                     return alert('요청자와 마트를 먼저 선택해주세요.');
                 }
                 setStep(2);
             }
-            // 2->3 갈 때 검사 (goNext 로직 재사용 권장하나 간단히 처리)
         }
     };
 
@@ -234,7 +239,7 @@ export default function Home() {
                                     <thead>
                                         <tr>
                                             <th>마트명</th>
-                                            <th>담당자</th> {/* 담당자 컬럼 추가 */}
+                                            <th>담당자</th>
                                             <th>상태</th>
                                             <th className={styles.hideOnMobile}>등록일</th>
                                         </tr>
@@ -244,10 +249,10 @@ export default function Home() {
                                             <tr 
                                                 key={mart.id} 
                                                 className={`${styles.martRow} ${selectedMart?.id === mart.id ? styles.selectedRow : ''} ${!mart.orderable ? styles.disabledRow : ''}`}
-                                                onClick={() => mart.orderable && setSelectedMart(mart)}
+                                                onClick={() => handleMartSelect(mart)}
                                             >
                                                 <td>{mart.name}</td>
-                                                <td>{mart.manager}</td> {/* 담당자 데이터 */}
+                                                <td>{mart.manager}</td>
                                                 <td>
                                                     <span className={mart.orderable ? styles.statusOk : styles.statusNo}>
                                                         {mart.orderable ? '가능' : '불가'}
@@ -464,7 +469,7 @@ export default function Home() {
                 )}
             </div>
 
-            {/* 모바일 디자인 선택 모달 */}
+            {/* 모달 */}
             {showDesignModal && (
                 <div className={styles.modalOverlay} onClick={() => setShowDesignModal(false)}>
                     <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
