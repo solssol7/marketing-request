@@ -1,20 +1,12 @@
-// src/components/Step3_Confirm.js
-import styles from '../app/page.module.css';
+import common from '../app/page.module.css';
+import styles from './Step3.module.css';
 
 export default function Step3_Confirm({
-    requester,
-    selectedMart,
-    currentRequest,
-    minDate,
-    dueDate,
-    setDueDate,
-    onPrev,
-    onSubmit,
-    loading
+    requester, selectedMart, currentRequest, minDate, dueDate, setDueDate, onPrev, onSubmit, loading
 }) {
     return (
-        <div className={styles.stepContent}>
-            <h2 className={styles.title}>마지막으로 확인해주세요.</h2>
+        <div className={common.stepContent}>
+            <h2 className={common.title}>마지막으로 확인해주세요.</h2>
             
             <div className={styles.summaryCard}>
                 <p><strong>요청자:</strong> {requester}</p>
@@ -31,21 +23,14 @@ export default function Step3_Confirm({
                 </ul>
             </div>
 
-            <div className={styles.formGroup}>
-                <label className={styles.label}>희망 마감일</label>
-                <input 
-                    type="date" 
-                    className={styles.input} 
-                    min={minDate} 
-                    value={dueDate} 
-                    onChange={(e) => setDueDate(e.target.value)} 
-                    required 
-                />
+            <div className={common.formGroup}>
+                <label className={common.label}>희망 마감일</label>
+                <input type="date" className={common.input} min={minDate} value={dueDate} onChange={(e) => setDueDate(e.target.value)} required />
             </div>
 
-            <div className={styles.btnGroup}>
-                <button className={styles.prevBtn} onClick={onPrev}>← 품목 수정</button>
-                <button className={styles.submitBtn} onClick={onSubmit} disabled={loading}>
+            <div className={common.btnGroup}>
+                <button className={common.prevBtn} onClick={onPrev}>← 품목 수정</button>
+                <button className={common.submitBtn} onClick={onSubmit} disabled={loading}>
                     {loading ? '신청 중...' : '신청하기'}
                 </button>
             </div>
