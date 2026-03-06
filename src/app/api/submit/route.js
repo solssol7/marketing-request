@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-// 빌드 오류를 방지하기 위해 상대 경로로 수정
+// 빌드 오류 방지를 위한 상대 경로 사용
 import { getGoogleSheets } from '../../../lib/google'; 
 import axios from 'axios';
 
-// 구글 시트에 로그를 기록하는 함수 (Vercel 로그 제한 우회용)
+// 구글 시트에 로그를 기록하는 함수
 async function writeLog(sheets, spreadsheetId, message, details = '') {
     try {
         const timestamp = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
@@ -38,7 +38,7 @@ export async function POST(req) {
         const slackId = userInfo ? userInfo[3] : null; 
         const requesterGid = userInfo ? userInfo[5] : ''; 
 
-        // 2. 요청 품목 분석 (X배너, 현수막 등이 섞여 있으면 분리)
+        // 2. 요청 품목 분석 및 카테고리화
         const categories = [];
         if (Number(formData.실내용X배너개수) > 0 || Number(formData.실외용X배너개수) > 0) categories.push("X배너");
         if (formData.현수막가로 || formData.현수막세로) categories.push("현수막");
@@ -61,20 +61,20 @@ export async function POST(req) {
         const rowsToAppend = [];
         const slackNotifications = [];
 
-        // 3. 품목별로 데이터 행(Row) 생성
+        // 3. 품목별 개별 행 데이터 생성
         categories.forEach((type, index) => {
-            const requestId = `${baseRequestId}_${index}`; // 각 행마다 고유한 ID 부여
-            const newRow = Array(30).fill(''); // 30개의 빈 열 생성
+            const requestId = `${baseRequestId}_${index}`;
+            const newRow = Array(30).fill(''); 
             
-            // 공통 정보 입력 (인덱스 주의)
+            // 공통 데이터 설정
             newRow[0] = requestId;          // A: ID
             newRow[1] = formData.요청자;     // B: 요청자
             newRow[2] = formData.마트명;     // C: 마트명
-            newRow[3] = requestDate;        // D: 요청일 (시트 기록용)
+            newRow[3] = requestDate;        // D: 요청일
             newRow[4] = formData.마감기한;   // E: 마감기한
-            newRow[24] = requesterGid;      // Y: GID (25번째 열)
-            newRow[28] = type;              // AC: 요청매체 (29번째 열) - 정확한 위치 고정
-            newRow[29] = formData.마트Id;    // AD: 마트 ID (30번째 열) - 정확한 위치 고정
+            newRow[24] = requesterGid;      // Y: GID
+            newRow[28] = type;              // AC: 요청매체
+            newRow[29] = formData.마트Id;    // AD: 마트 ID (구글 시트 저장용)
 
             let threadText = `◼︎ ${type} 요청\n`;
 
@@ -106,7 +106,7 @@ export async function POST(req) {
             slackNotifications.push({ type, threadText, requestId });
         });
 
-        // 4. 구글 시트 전송
+        // 4. 구글 시트 데이터 추가
         await sheets.spreadsheets.values.append({
             spreadsheetId,
             range: '내역!A:A',
@@ -114,7 +114,7 @@ export async function POST(req) {
             requestBody: { values: rowsToAppend },
         });
 
-        // 5. 슬랙 알림 전송 (항목별 개별 메시지)
+        // 5. 슬랙 알림 발송 (storeId 포함)
         const webhookUrl = isDistributor ? process.env.SLACK_WEBHOOK_DISTRIBUTOR : process.env.SLACK_WEBHOOK_NORMAL;
         if (webhookUrl) {
             for (const notice of slackNotifications) {
@@ -122,7 +122,8 @@ export async function POST(req) {
                     requestId: notice.requestId,
                     requester: isDistributor ? formData.요청자 : slackId,
                     storeName: formData.마트명,
-                    requestDate: requestDate, // ★ 추가됨: 이제 슬랙에서도 요청일이 보입니다.
+                    storeId: formData.마트Id, // ★ 추가됨: 이제 슬랙에서도 마트 ID를 storeId로 받습니다.
+                    requestDate: requestDate,
                     dueDate: formData.마감기한,
                     thread: notice.threadText,
                     requestSummary: notice.type,
@@ -131,7 +132,6 @@ export async function POST(req) {
             }
         }
 
-        // 로그 기록
         await writeLog(sheets, spreadsheetId, 'SUCCESS', `${formData.마트명} (${categories.join(', ')})`);
         return NextResponse.json({ success: true });
 
