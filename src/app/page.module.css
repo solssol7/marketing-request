@@ -17,6 +17,8 @@
     border-radius: 20px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.05);
     min-height: 400px;
+    position: relative; /* 자식 sticky 기준 */
+    padding-bottom: 100px; /* 버튼 공간 확보 */
 }
 
 /* 타이틀 */
@@ -93,8 +95,21 @@
     display: flex;
     gap: 12px;
     margin-top: 40px;
-    padding-top: 20px;
+    padding: 20px;
     border-top: 1px solid #eee;
+    
+    /* [Sticky 설정] */
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    margin-left: -32px;  /* card 패딩 상쇄 */
+    margin-right: -32px; /* card 패딩 상쇄 */
+    margin-bottom: -32px; /* card 패딩 상쇄 */
+    border-radius: 0 0 20px 20px;
+    z-index: 100;
+    box-shadow: 0 -10px 20px rgba(0,0,0,0.05);
 }
 .prevBtn, .nextBtn, .submitBtn {
     padding: 16px;
@@ -125,4 +140,13 @@
 @media (min-width: 769px) {
     .mobileOnly { display: none; }
     .desktopOnly { display: grid; }
+}
+@media (max-width: 768px) {
+    .card { padding: 20px; padding-bottom: 90px; }
+    .btnGroup {
+        margin-left: -20px;
+        margin-right: -20px;
+        margin-bottom: -20px;
+        padding: 16px;
+    }
 }
