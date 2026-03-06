@@ -1,13 +1,18 @@
+/* src/components/DesignModal.js */
 import styles from './Modal.module.css';
-import itemStyles from './Step2.module.css'; // 이미지 스타일 재사용
+import itemStyles from './Step2.module.css';
 
 export default function DesignModal({
     isOpen, onClose, type, currentRequest, handleXBannerCheck, handleBannerTypeChange
 }) {
     if (!isOpen) return null;
 
-    const xBannerList = Array.from({ length: 16 }, (_, i) => i + 1);
-    const bannerList = Array.from({ length: 6 }, (_, i) => i + 1);
+    // --- 설정: Step2_Items.js와 동일하게 맞춰주세요 ---
+    const X_BANNER_COUNT = 16; 
+    const BANNER_COUNT = 6;    
+
+    const xBannerList = Array.from({ length: X_BANNER_COUNT }, (_, i) => i + 1);
+    const bannerList = Array.from({ length: BANNER_COUNT }, (_, i) => i + 1);
 
     return (
         <div className={styles.overlay} onClick={onClose}>
