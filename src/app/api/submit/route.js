@@ -1,30 +1,31 @@
 import { NextResponse } from 'next/server';
-import { google } from 'googleapis';
+import { getGoogleSheets } from '@/lib/google'; // 공통 라이브러리 사용
 import axios from 'axios';
 
+// [추가] 구글 시트에 로그를 남기는 함수
+async function writeLog(sheets, spreadsheetId, message, details = '') {
+    try {
+        const timestamp = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+        await sheets.spreadsheets.values.append({
+            spreadsheetId,
+            range: '로그!A:C', // '로그'라는 이름의 시트가 있어야 합니다.
+            valueInputOption: 'USER_ENTERED',
+            requestBody: { values: [[timestamp, message, details]] },
+        });
+    } catch (e) {
+        console.error('Logging to sheet failed:', e);
+    }
+}
+
 export async function POST(req) {
+    let sheets;
+    const spreadsheetId = process.env.SPREADSHEET_ID;
+    
     try {
         const formData = await req.json();
-        
-        // 환경변수 체크
-        const email = process.env.GOOGLE_CLIENT_EMAIL;
-        const key = process.env.GOOGLE_PRIVATE_KEY;
-        const spreadsheetId = process.env.SPREADSHEET_ID;
+        sheets = await getGoogleSheets();
 
-        if (!email || !key) throw new Error('구글 인증 환경변수 미설정');
-
-        const auth = new google.auth.GoogleAuth({
-            credentials: {
-                client_email: email,
-                private_key: key.replace(/\\n/g, '\n'),
-            },
-            scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-        });
-
-        const client = await auth.getClient();
-        const sheets = google.sheets({ version: 'v4', auth: client });
-
-        // 1. 유저 정보 조회 (Slack ID 매칭용)
+        // 1. 유저 정보 조회
         const userSheetData = await sheets.spreadsheets.values.get({
             spreadsheetId,
             range: '유저 정보!A2:F',
@@ -33,83 +34,107 @@ export async function POST(req) {
         const userInfo = userRows.find(row => row[0] === formData.요청자);
 
         const isDistributor = formData.요청자.includes('총판');
-        const slackId = userInfo ? userInfo[3] : null; // D열 Slack ID
-        const requesterGid = userInfo ? userInfo[5] : ''; // F열 GID
+        const slackId = userInfo ? userInfo[3] : null;
+        const requesterGid = userInfo ? userInfo[5] : '';
 
-        // 2. 데이터 가공
+        // 2. 요청 품목 분석 (분할 처리 대상 선정)
+        const categories = [];
+        if (Number(formData.실내용X배너개수) > 0 || Number(formData.실외용X배너개수) > 0) categories.push("X배너");
+        if (formData.현수막가로 || formData.현수막세로) categories.push("현수막");
+        if (formData.전단지가로 || formData.전단지세로) categories.push("전단지");
+        if (formData.디자인용도) categories.push("디자인");
+        if (formData.기타 && categories.length === 0) categories.push("기타"); // 아무것도 선택 안된 경우
+        else if (formData.기타) categories.push("기타");
+
         const timestamp = new Date();
-        const requestId = timestamp.getTime();
+        const baseRequestId = timestamp.getTime();
         const requestDate = timestamp.toISOString().split('T')[0];
 
-        // 요청 타입 요약
-        let requestType = "기타";
-        if (parseInt(formData.실내용X배너개수) > 0 || parseInt(formData.실외용X배너개수) > 0) requestType = "X배너";
-        else if (formData.현수막가로) requestType = "현수막";
-        else if (formData.전단지가로) requestType = "전단지";
-        else if (formData.디자인용도) requestType = "디자인";
+        const rowsToAppend = [];
+        const slackNotifications = [];
 
-        // 구글 시트 행 데이터 (순서 중요)
-        const newRow = [
-            requestId,                  // 0: ID
-            formData.요청자,            // 1: 요청자
-            formData.마트명,            // 2: 마트명
-            requestDate,                // 3: 요청일
-            formData.마감기한,          // 4: 마감기한
-            '', '',                     // 5, 6
-            formData.실내용X배너개수 || 0, // 7
-            Array.isArray(formData.x배너디자인) ? formData.x배너디자인.join(', ') : '', // 8
-            formData.실외용X배너개수 || 0, // 9
-            formData.디자인용도 || '',     // 10
-            formData.현수막가로 || '',     // 11
-            formData.현수막세로 || '',     // 12
-            formData.현수막디자인 || '',   // 13
-            formData.전단지가로 || '',     // 14
-            formData.전단지세로 || '',     // 15
-            formData.전단지디자인 || '',   // 16
-            formData.기타 || '',           // 17
-            '', '', '', '', '', '', '',    // 18~23
-            requesterGid,                  // 24
-            '', '',                        // 25, 26
-            formData.디자인사이즈 || '',   // 27
-            requestType,                   // 28
-            formData.마트Id || ''          // 29
-        ];
+        // 3. 각 품목별로 데이터 분리 및 행 생성
+        categories.forEach((type, index) => {
+            const requestId = `${baseRequestId}_${index}`; // 고유 ID 생성
+            
+            // 열 위치 조정을 위한 배열 (28번 index가 AC열, 29번 index가 AD열)
+            const newRow = Array(30).fill(''); 
+            
+            // 공통 정보
+            newRow[0] = requestId;          // A: ID
+            newRow[1] = formData.요청자;     // B: 요청자
+            newRow[2] = formData.마트명;     // C: 마트명
+            newRow[3] = requestDate;        // D: 요청일
+            newRow[4] = formData.마감기한;   // E: 마감기한
+            newRow[24] = requesterGid;      // Y: GID (기존 index 25에서 24로 조정)
+            newRow[28] = type;              // AC: 요청매체 (정확한 위치 고정)
+            newRow[29] = formData.마트Id;    // AD: 마트 ID (정확한 위치 고정)
 
-        // 3. 시트에 추가
+            // 품목별 상세 정보 채우기
+            let threadText = `◼︎ ${type} 요청\n`;
+
+            if (type === "X배너") {
+                newRow[7] = formData.실내용X배너개수 || 0;
+                newRow[8] = Array.isArray(formData.x배너디자인) ? formData.x배너디자인.join(', ') : '';
+                newRow[9] = formData.실외용X배너개수 || 0;
+                threadText += `- 실내: ${newRow[7]}, 실외: ${newRow[9]}\n- 디자인: ${newRow[8]}`;
+            } else if (type === "현수막") {
+                newRow[11] = formData.현수막가로 || '';
+                newRow[12] = formData.현수막세로 || '';
+                newRow[13] = formData.현수막디자인 || '';
+                threadText += `- 사이즈: ${newRow[11]}x${newRow[12]}\n- 디자인: ${newRow[13]}`;
+            } else if (type === "전단지") {
+                newRow[14] = formData.전단지가로 || '';
+                newRow[15] = formData.전단지세로 || '';
+                newRow[16] = formData.전단지디자인 || '';
+                threadText += `- 사이즈: ${newRow[14]}x${newRow[15]}`;
+            } else if (type === "디자인") {
+                newRow[10] = formData.디자인용도 || '';
+                newRow[27] = formData.디자인사이즈 || ''; // AB열
+                threadText += `- 용도: ${newRow[10]}\n- 사이즈: ${newRow[27]}`;
+            } else if (type === "기타") {
+                newRow[17] = formData.기타 || '';
+                threadText += `- 내용: ${newRow[17]}`;
+            }
+
+            rowsToAppend.push(newRow);
+            slackNotifications.push({ type, threadText, requestId });
+        });
+
+        // 4. 시트에 일괄 추가
         await sheets.spreadsheets.values.append({
             spreadsheetId,
             range: '내역!A:A',
             valueInputOption: 'USER_ENTERED',
-            requestBody: { values: [newRow] },
+            requestBody: { values: rowsToAppend },
         });
 
-        // 4. 슬랙 알림
+        // 5. 슬랙 알림 개별 발송
         const webhookUrl = isDistributor
             ? process.env.SLACK_WEBHOOK_DISTRIBUTOR
             : process.env.SLACK_WEBHOOK_NORMAL;
 
         if (webhookUrl) {
-            let threadText = `◼︎ ${requestType} 요청\n`;
-            if (requestType === 'X배너') threadText += `- 실내: ${newRow[7]}, 실외: ${newRow[9]}\n- 디자인: ${newRow[8]}`;
-            if (requestType === '현수막') threadText += `- 사이즈: ${newRow[11]}x${newRow[12]}\n- 디자인: ${newRow[13]}`;
-            if (requestType === '전단지') threadText += `- 사이즈: ${newRow[14]}x${newRow[15]}`;
-            if (requestType === '기타') threadText += `- 내용: ${newRow[17]}`;
-            
-            await axios.post(webhookUrl, {
-                requestId: requestId.toString(),
-                requester: isDistributor ? formData.요청자 : slackId,
-                storeName: formData.마트명,
-                dueDate: formData.마감기한,
-                thread: threadText,
-                requestSummary: requestType,
-                isDistributor: isDistributor
-            });
+            for (const notice of slackNotifications) {
+                await axios.post(webhookUrl, {
+                    requestId: notice.requestId,
+                    requester: isDistributor ? formData.요청자 : slackId,
+                    storeName: formData.마트명,
+                    dueDate: formData.마감기한,
+                    thread: notice.threadText,
+                    requestSummary: notice.type,
+                    isDistributor: isDistributor
+                });
+            }
         }
 
+        // 성공 로그 기록
+        await writeLog(sheets, spreadsheetId, 'SUCCESS', `${formData.마트명} - ${categories.join(', ')}`);
         return NextResponse.json({ success: true });
 
     } catch (error) {
         console.error('Submit Error:', error);
+        if (sheets) await writeLog(sheets, spreadsheetId, 'ERROR', error.message);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
